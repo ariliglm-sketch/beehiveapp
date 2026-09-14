@@ -24,6 +24,10 @@ import {
   HandsPrayingIcon,
   NotebookIcon,
   HourglassMediumIcon,
+  BookOpenIcon,
+  SwordIcon,
+  HandIcon,
+  PathIcon,
   type Icon as PhosphorIcon,
 } from 'phosphor-react-native';
 
@@ -52,6 +56,10 @@ const REGISTRY: Record<string, PhosphorIcon> = {
   HandsPraying: HandsPrayingIcon,
   Notebook: NotebookIcon,
   HourglassMedium: HourglassMediumIcon,
+  BookOpen: BookOpenIcon,
+  Sword: SwordIcon,
+  Hand: HandIcon,
+  Path: PathIcon,
 };
 
 export function Icon({
