@@ -5,7 +5,7 @@ import type { ToolsStackParamList } from '../navigation/types';
 import { PlainHeader } from '../components/Header';
 import { Icon } from '../components/Icon';
 import { colors, fonts, space } from '../theme/tokens';
-import { TOOLS } from '../data/content';
+import { ALL_TOOLS } from '../data/toolbox';
 
 type Props = NativeStackScreenProps<ToolsStackParamList, 'ToolsList'>;
 
@@ -17,7 +17,7 @@ export function ToolsListScreen({ navigation }: Props) {
         <Text style={s.intro}>
           Simple tools you can draw on one sheet of paper and hand to anyone. Learn them until you can teach them from memory — a tool you cannot reproduce cannot multiply.
         </Text>
-        {TOOLS.map((t) => (
+        {ALL_TOOLS.map((t) => (
           <Pressable key={t.id} onPress={() => navigation.navigate('Tool', { toolId: t.id })} style={s.row}>
             <Icon name={t.icon} size={24} color={colors.accent700} />
             <View style={{ flex: 1 }}>

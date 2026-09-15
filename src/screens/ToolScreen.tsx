@@ -4,7 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ToolsStackParamList } from '../navigation/types';
 import { BareHeader } from '../components/Header';
 import { colors, fonts, space } from '../theme/tokens';
-import { TOOLS } from '../data/content';
+import { ALL_TOOLS } from '../data/toolbox';
 import { OikosTool } from './tools/OikosTool';
 import { StoryTool } from './tools/StoryTool';
 import { CirclesTool } from './tools/CirclesTool';
@@ -14,7 +14,7 @@ import { MapTool } from './tools/MapTool';
 type Props = NativeStackScreenProps<ToolsStackParamList, 'Tool'>;
 
 export function ToolScreen({ route, navigation }: Props) {
-  const tool = TOOLS.find((t) => t.id === route.params.toolId) ?? TOOLS[0];
+  const tool = ALL_TOOLS.find((t) => t.id === route.params.toolId) ?? ALL_TOOLS[0];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
