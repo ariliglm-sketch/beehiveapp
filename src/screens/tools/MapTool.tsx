@@ -5,6 +5,7 @@ import { colors, fonts, space } from '../../theme/tokens';
 import {
   deepestGeneration,
   mapAdvice,
+  namingFor,
   orderedGroups,
   stageLook,
   startedByLabel,
@@ -24,6 +25,7 @@ export function MapTool() {
   const [stage, setStage] = useState<GroupStage>('study');
   const [source, setSource] = useState<Source>({ kind: 'me' });
   const [error, setError] = useState('');
+  const naming = namingFor(state);
 
   const rows = orderedGroups(state);
   const deepest = deepestGeneration(state);
@@ -56,6 +58,8 @@ export function MapTool() {
 
   return (
     <View style={{ paddingTop: space[2] }}>
+      <Text style={s.banner}>{naming.banner}</Text>
+
       {rows.length > 0 && (
         <Text style={s.h6}>{rows.length + ' on the map · ' + deepest + ' generation' + (deepest === 1 ? '' : 's') + ' deep'}</Text>
       )}
@@ -78,7 +82,15 @@ export function MapTool() {
       ))}
 
       <View style={{ paddingTop: space[4] }}>
-        <Field label="Add a group" value={draft} onChangeText={(t: string) => { setDraft(t); if (error) setError(''); }} placeholder="Name, and where it meets" />
+        <Field
+          label={naming.groupLabel}
+          value={draft}
+          onChangeText={(t: string) => {
+            setDraft(t);
+            if (error) setError('');
+          }}
+          placeholder={naming.groupPlaceholder}
+        />
         {error.length > 0 && <Text style={s.error}>{error}</Text>}
 
         <Text style={s.label}>What is it now?</Text>
@@ -124,6 +136,9 @@ export function MapTool() {
 
       <Text style={[s.advice, { paddingTop: space[5] }]}>{mapAdvice(state)}</Text>
       <Text style={[s.helper, { paddingTop: space[3] }]}>
+        This page shows how the work has spread, so it is the page that would cost the most if this phone were taken. Keep the names here as short and unremarkable as you can.
+      </Text>
+      <Text style={[s.helper, { paddingTop: space[2] }]}>
         Generations are worked out from who started what, so you never set them yourself. Tap a stage tag to move a group between study, group and church.
       </Text>
     </View>
@@ -131,6 +146,7 @@ export function MapTool() {
 }
 
 const s = StyleSheet.create({
+  banner: { fontSize: 12, color: colors.accent700, paddingBottom: space[3] },
   h6: { fontFamily: fonts.heading, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: colors.text, marginBottom: space[2] },
   row: { flexDirection: 'row', gap: space[3], alignItems: 'flex-start', paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: 'rgba(32,30,29,0.10)' },
   gen: { fontFamily: fonts.heading, fontWeight: '600', fontSize: 13, letterSpacing: 0.8, width: 30, color: colors.accent700, paddingTop: 3 },
