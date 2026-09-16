@@ -10,6 +10,15 @@ import { StoryTool } from './tools/StoryTool';
 import { CirclesTool } from './tools/CirclesTool';
 import { ChurchTool } from './tools/ChurchTool';
 import { MapTool } from './tools/MapTool';
+import { Luke10Tool } from './tools/Luke10Tool';
+import { ResponsesTool } from './tools/ResponsesTool';
+import { FourOneTool } from './tools/FourOneTool';
+import { ThirdsTool } from './tools/ThirdsTool';
+import { SwordTool } from './tools/SwordTool';
+import { HealthyChurchTool } from './tools/HealthyChurchTool';
+import { LevelsTool } from './tools/LevelsTool';
+import { MawlTool } from './tools/MawlTool';
+import { DbsTool } from './tools/DbsTool';
 
 type Props = NativeStackScreenProps<ToolsStackParamList, 'Tool'>;
 
@@ -24,6 +33,16 @@ export function ToolScreen({ route, navigation }: Props) {
         <Text style={s.title}>{tool.name}</Text>
         <Text style={s.intro}>{tool.intro}</Text>
         <Text style={s.ref}>{tool.verseRef}</Text>
+
+        {tool.id === 'luke10' ? <Luke10Tool /> : null}
+        {tool.id === 'responses' ? <ResponsesTool /> : null}
+        {tool.id === 'fourone' ? <FourOneTool /> : null}
+        {tool.id === 'thirds' ? <ThirdsTool /> : null}
+        {tool.id === 'sword' ? <SwordTool /> : null}
+        {tool.id === 'healthy' ? <HealthyChurchTool /> : null}
+        {tool.id === 'levels' ? <LevelsTool /> : null}
+        {tool.id === 'mawl' ? <MawlTool /> : null}
+        {tool.id === 'dbs' ? <DbsTool /> : null}
 
         {tool.items ? (
           <View>
