@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ALL_STEPS, CHURCH_MARKS, ENCOURAGEMENTS, PARTS, type Part } from '../data/content';
+import { DEFAULT_PACK_ID } from '../data/verses';
 
 export type Encouragement = (typeof ENCOURAGEMENTS)[number];
 
@@ -24,6 +25,7 @@ export type Group = {
 type State = {
   hydrated: boolean;
   discreet: boolean;
+  packId: string;
   done: Record<string, boolean>;
   checks: Record<string, Record<number, boolean>>;
   celebrate: Encouragement | null;
@@ -44,6 +46,7 @@ const noMarks: OikosMarks = { convo: false, study: false, trained: false };
 const initialState: State = {
   hydrated: false,
   discreet: true,
+  packId: DEFAULT_PACK_ID,
   done: {},
   checks: {},
   celebrate: null,
@@ -75,12 +78,14 @@ function normalize(raw: Partial<State>): Partial<State> {
   }
   if (!Array.isArray(raw.groups)) out.groups = [];
   if (typeof raw.discreet !== 'boolean') out.discreet = true;
+  if (typeof raw.packId !== 'string') out.packId = DEFAULT_PACK_ID;
   return out;
 }
 
 type Action =
   | { type: 'hydrate'; state: Partial<State> }
   | { type: 'toggleDiscreet' }
+  | { type: 'setPack'; packId: string }
   | { type: 'toggleStepAction'; stepId: string; index: number }
   | { type: 'completeStep'; stepId: string }
   | { type: 'undoStep'; stepId: string }
@@ -114,6 +119,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, ...normalize(action.state), hydrated: true, celebrate: null };
     case 'toggleDiscreet':
       return { ...state, discreet: !state.discreet };
+    case 'setPack':
+      return { ...state, packId: action.packId };
     case 'toggleStepAction': {
       const prior = state.checks[action.stepId] || {};
       return { ...state, checks: { ...state.checks, [action.stepId]: { ...prior, [action.index]: !prior[action.index] } } };
@@ -229,7 +236,7 @@ function reducer(state: State, action: Action): State {
     case 'markPrayedToday':
       return { ...state, prayedDays: state.prayedDays + 1 };
     case 'resetAll':
-      return { ...initialState, hydrated: true, discreet: state.discreet };
+      return { ...initialState, hydrated: true, discreet: state.discreet, packId: state.packId };
     default:
       return state;
   }
