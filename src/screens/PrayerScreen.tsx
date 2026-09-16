@@ -4,12 +4,13 @@ import { PlainHeader } from '../components/Header';
 import { Icon } from '../components/Icon';
 import { Field, Btn } from '../components/ui';
 import { colors, fonts, space } from '../theme/tokens';
-import { useAppDispatch, useAppState } from '../state/store';
+import { namingFor, useAppDispatch, useAppState } from '../state/store';
 
 export function PrayerScreen() {
   const state = useAppState();
   const dispatch = useAppDispatch();
   const [draft, setDraft] = useState('');
+  const naming = namingFor(state);
 
   const confirmDelete = (id: string, name: string) => {
     Alert.alert('Take ' + name + ' off the list?', 'They stay on your oikos map if they were already there.', [
@@ -54,7 +55,7 @@ export function PrayerScreen() {
 
         <View style={{ paddingTop: space[4], flexDirection: 'row', gap: space[2], alignItems: 'flex-end' }}>
           <View style={{ flex: 1 }}>
-            <Field label="Add someone to carry" value={draft} onChangeText={setDraft} placeholder="Name, and one line about them" />
+            <Field label={naming.prayerLabel} value={draft} onChangeText={setDraft} placeholder={naming.prayerPlaceholder} />
           </View>
           <Btn
             label="Add"
@@ -72,6 +73,7 @@ export function PrayerScreen() {
               ? 'Tap that once at the end of a day you prayed. Keep the list short enough that you can actually pray it.'
               : 'You have prayed ' + state.prayedDays + ' days. Keep the list short enough that you can actually pray it.'}
           </Text>
+          <Text style={s.helper}>God knows who you mean. A code name loses nothing in prayer.</Text>
         </View>
       </ScrollView>
     </View>
@@ -90,4 +92,5 @@ const s = StyleSheet.create({
   actionRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingBottom: space[2] },
   remove: { fontSize: 13, color: colors.neutral600 },
   close: { fontSize: 15, lineHeight: 24, color: colors.text },
+  helper: { fontSize: 14, lineHeight: 22, color: 'rgba(32,30,29,0.55)', paddingTop: space[2] },
 });
