@@ -5,9 +5,11 @@ import { ALL_STEPS, CHURCH_MARKS, ENCOURAGEMENTS, PARTS, type Part } from '../da
 export type Encouragement = (typeof ENCOURAGEMENTS)[number];
 
 export type OikosLight = 'green' | 'yellow' | 'red';
-export type OikosPerson = { id: string; name: string; note: string; light: OikosLight };
-export type PrayerName = { id: string; name: string; note: string; prayed: boolean };
-export type JournalEntry = { id: string; date: string; body: string; tag: string };
+export type OikosMark = 'convo' | 'study' | 'trained';
+export type OikosMarks = { convo: boolean; study: boolean; trained: boolean };
+export type OikosPerson = { id: string; name: string; note: string; light: OikosLight; marks: OikosMarks };
+export type PrayerName = { id: string; name: string; note: string; prayed: boolean; oikosId?: string };
+export type JournalEntry = { id: string; date: string; body: string; tag: string; personId?: string; stepId?: string };
 
 type State = {
   hydrated: boolean;
@@ -24,6 +26,8 @@ type State = {
 };
 
 const STORAGE_KEY = 'beehive.state.v1';
+
+const noMarks: OikosMarks = { convo: false, study: false, trained: false };
 
 const initialState: State = {
   hydrated: false,
@@ -50,6 +54,13 @@ function makeId(prefix: string) {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+function normalize(raw: Partial<State>): Partial<State> {
+  const oikos = Array.isArray(raw.oikos)
+    ? raw.oikos.map((p) => ({ ...p, marks: { ...noMarks, ...(p as OikosPerson).marks } }))
+    : undefined;
+  return oikos ? { ...raw, oikos } : raw;
+}
+
 type Action =
   | { type: 'hydrate'; state: Partial<State> }
   | { type: 'toggleStepAction'; stepId: string; index: number }
@@ -63,11 +74,13 @@ type Action =
   | { type: 'cycleOikos'; id: string }
   | { type: 'addOikos'; text: string }
   | { type: 'deleteOikos'; id: string }
+  | { type: 'toggleOikosMark'; id: string; mark: OikosMark }
+  | { type: 'promoteToPrayer'; id: string }
   | { type: 'toggleChurchMark'; id: string }
   | { type: 'togglePrayed'; id: string }
   | { type: 'addName'; text: string }
   | { type: 'deleteName'; id: string }
-  | { type: 'addEntry'; text: string; tag: string }
+  | { type: 'addEntry'; text: string; tag: string; personId?: string; stepId?: string }
   | { type: 'deleteEntry'; id: string }
   | { type: 'markPrayedToday' }
   | { type: 'resetAll' };
@@ -75,7 +88,7 @@ type Action =
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'hydrate':
-      return { ...state, ...action.state, hydrated: true, celebrate: null };
+      return { ...state, ...normalize(action.state), hydrated: true, celebrate: null };
     case 'toggleStepAction': {
       const prior = state.checks[action.stepId] || {};
       return { ...state, checks: { ...state.checks, [action.stepId]: { ...prior, [action.index]: !prior[action.index] } } };
@@ -114,10 +127,31 @@ function reducer(state: State, action: Action): State {
       const t = action.text.trim();
       if (!t) return state;
       const [name, ...rest] = t.split(/,\s*/);
-      return { ...state, oikos: [...state.oikos, { id: makeId('o'), name, note: rest.join(', '), light: 'yellow' }] };
+      return { ...state, oikos: [...state.oikos, { id: makeId('o'), name, note: rest.join(', '), light: 'yellow', marks: { ...noMarks } }] };
     }
     case 'deleteOikos':
-      return { ...state, oikos: state.oikos.filter((p) => p.id !== action.id) };
+      return {
+        ...state,
+        oikos: state.oikos.filter((p) => p.id !== action.id),
+        names: state.names.map((n) => (n.oikosId === action.id ? { ...n, oikosId: undefined } : n)),
+        entries: state.entries.map((e) => (e.personId === action.id ? { ...e, personId: undefined } : e)),
+      };
+    case 'toggleOikosMark':
+      return {
+        ...state,
+        oikos: state.oikos.map((p) =>
+          p.id === action.id ? { ...p, marks: { ...p.marks, [action.mark]: !p.marks[action.mark] } } : p
+        ),
+      };
+    case 'promoteToPrayer': {
+      const person = state.oikos.find((p) => p.id === action.id);
+      if (!person) return state;
+      if (state.names.some((n) => n.oikosId === person.id)) return state;
+      return {
+        ...state,
+        names: [...state.names, { id: makeId('n'), name: person.name, note: person.note, prayed: false, oikosId: person.id }],
+      };
+    }
     case 'toggleChurchMark':
       return { ...state, churchMarks: { ...state.churchMarks, [action.id]: !state.churchMarks[action.id] } };
     case 'togglePrayed':
@@ -133,7 +167,10 @@ function reducer(state: State, action: Action): State {
     case 'addEntry': {
       const t = action.text.trim();
       if (!t) return state;
-      return { ...state, entries: [{ id: makeId('e'), date: today(), body: t, tag: action.tag }, ...state.entries] };
+      const entry: JournalEntry = { id: makeId('e'), date: today(), body: t, tag: action.tag };
+      if (action.personId) entry.personId = action.personId;
+      if (action.stepId) entry.stepId = action.stepId;
+      return { ...state, entries: [entry, ...state.entries] };
     }
     case 'deleteEntry':
       return { ...state, entries: state.entries.filter((e) => e.id !== action.id) };
@@ -227,8 +264,35 @@ export function churchMarksOn(state: State) {
   return CHURCH_MARKS.filter((m) => state.churchMarks[m.id]).length;
 }
 
+export function markedCount(state: State, mark: OikosMark) {
+  return state.oikos.filter((p) => p.marks[mark]).length;
+}
+
+export function goalTotals(state: State) {
+  return {
+    convos: state.goals.convos + markedCount(state, 'convo'),
+    studies: state.goals.studies + markedCount(state, 'study'),
+    trained: state.goals.trained + markedCount(state, 'trained'),
+  };
+}
+
+export function isOnPrayerList(state: State, oikosId: string) {
+  return state.names.some((n) => n.oikosId === oikosId);
+}
+
+export function personName(state: State, personId?: string) {
+  if (!personId) return null;
+  return state.oikos.find((p) => p.id === personId)?.name ?? null;
+}
+
 export const oikosLook: Record<OikosLight, { light: string; color: string; icon: string }> = {
   green: { light: 'Green · go now', color: 'accent700', icon: 'DoorOpen' },
   yellow: { light: 'Yellow · keep loving', color: 'accent2700', icon: 'HourglassMedium' },
   red: { light: 'Red · keep praying', color: 'neutral600', icon: 'Door' },
+};
+
+export const markLook: Record<OikosMark, { label: string; short: string }> = {
+  convo: { label: 'Heard the gospel', short: 'Conversation' },
+  study: { label: 'Studying with me', short: 'Study' },
+  trained: { label: 'Trained and sent', short: 'Trained' },
 };
