@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TodayStackParamList } from '../navigation/types';
 import { MastheadHeader } from '../components/Header';
@@ -7,6 +7,7 @@ import { Btn } from '../components/ui';
 import { CmykNumeral } from '../components/CmykNumeral';
 import { colors, fonts, space } from '../theme/tokens';
 import { PARTS } from '../data/content';
+import { PACKS, verseForDate } from '../data/verses';
 import { activePartNum, doneCount, goalTotals, markedCount, nextStep, useAppDispatch, useAppState, type OikosMark } from '../state/store';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'Today'>;
@@ -28,6 +29,7 @@ export function TodayScreen({ navigation }: Props) {
   const activeStepsDone = activePart.steps.filter((x) => state.done[x.id]).length;
   const stepsDone = doneCount(state);
   const totals = goalTotals(state);
+  const daily = verseForDate(new Date(), state.packId);
 
   return (
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: space[8] }}>
@@ -70,9 +72,30 @@ export function TodayScreen({ navigation }: Props) {
 
         <Section>
           <Kicker>A word for today</Kicker>
-          <Text style={s.verse}>So is the kingdom of God, as if a man should cast seed into the ground; and should sleep, and rise night and day, and the seed should spring and grow up, he knoweth not how.</Text>
-          <Text style={s.verseRef}>Mark 4:26-27</Text>
-          <Text style={[s.body, { marginTop: space[3] }]}>The sower sleeps. The growth is not held up by your effort or your understanding. Sow today, and then rest.</Text>
+          <Text style={s.verse}>{daily.text}</Text>
+          <Text style={s.verseRef}>{daily.verse.ref + ' · ' + daily.pack.shortName}</Text>
+          {daily.verse.reflection && <Text style={[s.body, { marginTop: space[3] }]}>{daily.verse.reflection}</Text>}
+
+          <View style={s.packRow}>
+            {PACKS.map((p) => {
+              const on = state.packId === p.id;
+              return (
+                <Pressable
+                  key={p.id}
+                  onPress={() => dispatch({ type: 'setPack', packId: p.id })}
+                  accessibilityLabel={'Read in ' + p.name}
+                  style={[s.chip, on && s.chipOn]}
+                  hitSlop={4}
+                >
+                  <Text style={[s.chipText, on && s.chipTextOn]}>{p.shortName}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {daily.usedFallback && (
+            <Text style={s.mutedSmall}>This translation is not loaded on your phone yet, so today’s verse is shown in {daily.pack.shortName}.</Text>
+          )}
+          <Text style={s.attribution}>{daily.pack.attribution}</Text>
         </Section>
 
         <Section>
@@ -91,7 +114,7 @@ export function TodayScreen({ navigation }: Props) {
         <Section last>
           <Kicker>Faithfulness, not results</Kicker>
           <View style={{ flexDirection: 'row', gap: space[6] }}>
-            <Stat value={String(state.prayedDays)} label={'days of prayer\nin a row'} />
+            <Stat value={String(state.prayedDays)} label={'days of prayer\nrecorded'} />
             <Stat value={String(stepsDone)} label={'steps walked\nsince you began'} />
             <Stat value={String(state.oikos.length)} label={'names on\nyour map'} />
           </View>
@@ -125,7 +148,7 @@ const s = StyleSheet.create({
   kicker: { fontFamily: fonts.heading, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: colors.text, marginBottom: space[2] },
   h2: { fontFamily: fonts.heading, fontSize: 26, color: colors.text, marginBottom: 6 },
   muted: { fontSize: 14, color: 'rgba(32,30,29,0.55)', marginBottom: space[2] },
-  mutedSmall: { fontSize: 13, lineHeight: 20, color: 'rgba(32,30,29,0.55)' },
+  mutedSmall: { fontSize: 13, lineHeight: 20, color: 'rgba(32,30,29,0.55)', paddingTop: space[2] },
   body: { fontSize: 15, lineHeight: 24, color: colors.text },
   goalRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: space[2] },
   goalCount: { fontFamily: fonts.heading, fontWeight: '600', fontSize: 26, width: 62, color: colors.text },
@@ -133,6 +156,12 @@ const s = StyleSheet.create({
   goalNote: { fontSize: 12, color: 'rgba(32,30,29,0.55)', marginTop: 1 },
   verse: { fontFamily: fonts.heading, fontSize: 23, lineHeight: 31, fontStyle: 'italic', color: colors.text, marginBottom: 6 },
   verseRef: { fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: colors.accent2700 },
+  packRow: { flexDirection: 'row', gap: space[2], paddingTop: space[4], flexWrap: 'wrap' },
+  chip: { borderWidth: 1, borderColor: 'rgba(32,30,29,0.20)', borderRadius: 999, paddingHorizontal: space[3], paddingVertical: 5 },
+  chipOn: { borderColor: colors.accent700, backgroundColor: 'rgba(32,30,29,0.05)' },
+  chipText: { fontSize: 12, color: 'rgba(32,30,29,0.55)' },
+  chipTextOn: { color: colors.accent700 },
+  attribution: { fontSize: 11, lineHeight: 17, color: 'rgba(32,30,29,0.40)', paddingTop: space[3] },
   fieldTitle: { fontFamily: fonts.heading, fontWeight: '600', fontSize: 19, color: colors.text },
   statValue: { fontFamily: fonts.heading, fontWeight: '600', fontSize: 32, color: colors.text, lineHeight: 34 },
   statLabel: { fontSize: 12, color: 'rgba(32,30,29,0.55)', marginTop: 2 },
