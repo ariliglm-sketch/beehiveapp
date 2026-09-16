@@ -134,7 +134,7 @@ export function MapTool() {
         <Btn label="Add to the map" style={{ marginTop: space[3], alignSelf: 'flex-start' }} onPress={add} />
       </View>
 
-      <Text style={[s.advice, { paddingTop: space[5] }]}>{mapAdvice(state)}</Text>
+      <Text style={[s.advice, { paddingTop: space[4] }]}>{mapAdvice(state)}</Text>
       <Text style={[s.helper, { paddingTop: space[3] }]}>
         This page shows how the work has spread, so it is the page that would cost the most if this phone were taken. Keep the names here as short and unremarkable as you can.
       </Text>
