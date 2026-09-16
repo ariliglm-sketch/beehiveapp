@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useMemo, useReducer } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ALL_STEPS, CHURCH_MARKS, ENCOURAGEMENTS, PARTS, type Part } from '../data/content';
 
 export type Encouragement = (typeof ENCOURAGEMENTS)[number];
@@ -6,9 +7,10 @@ export type Encouragement = (typeof ENCOURAGEMENTS)[number];
 export type OikosLight = 'green' | 'yellow' | 'red';
 export type OikosPerson = { id: string; name: string; note: string; light: OikosLight };
 export type PrayerName = { id: string; name: string; note: string; prayed: boolean };
-export type JournalEntry = { date: string; body: string; tag: string };
+export type JournalEntry = { id: string; date: string; body: string; tag: string };
 
 type State = {
+  hydrated: boolean;
   done: Record<string, boolean>;
   checks: Record<string, Record<number, boolean>>;
   celebrate: Encouragement | null;
@@ -21,73 +23,82 @@ type State = {
   prayedDays: number;
 };
 
+const STORAGE_KEY = 'beehive.state.v1';
+
 const initialState: State = {
-  done: { p11: true, p12: true, p13: true, p14: true, p21: true },
+  hydrated: false,
+  done: {},
   checks: {},
   celebrate: null,
-  goals: { convos: 4, studies: 1, trained: 2 },
-  story: {
-    before: 'I worked hard and drank hard, and I was angry at everyone.',
-    how: 'A neighbor read Luke with me and I gave my life to Jesus.',
-    since: 'I still have trouble, but I am not alone in it.',
-    practiced: 3,
-  },
-  oikos: [
-    { id: 'o1', name: 'Mama Auma', note: 'Neighbor. Hosts the Thursday reading.', light: 'green' },
-    { id: 'o2', name: 'Peter Ochieng', note: 'Home from the city. Asks good questions.', light: 'green' },
-    { id: 'o3', name: 'Joseph, the shopkeeper', note: 'Friendly, always busy. Wants to talk after market day.', light: 'yellow' },
-    { id: 'o4', name: 'My brother Daniel', note: 'Thinks I have become strange. Still eats at my table.', light: 'yellow' },
-    { id: 'o5', name: 'The elders of Nyakach', note: 'Cautious, not hostile. Need honoring first.', light: 'red' },
-    { id: 'o6', name: 'Grace and the boys', note: 'My household. My first congregation.', light: 'green' },
-  ],
-  churchMarks: { m1: true, m2: false, m3: true, m4: true, m5: false, m6: true, m7: true, m8: false, m9: false },
-  names: [
-    { id: 'n1', name: 'Mama Auma', note: 'Her husband is not yet willing.', prayed: true },
-    { id: 'n2', name: 'Peter Ochieng', note: 'Learning the three circles. Nervous but going.', prayed: true },
-    { id: 'n3', name: 'The elders of Nyakach', note: 'Gatekeepers of the village.', prayed: false },
-    { id: 'n4', name: 'Kadibo, the next village', note: 'No church there. No one has gone.', prayed: false },
-    { id: 'n5', name: 'My own household', note: 'Grace and the two boys, who carry this with me.', prayed: true },
-  ],
-  entries: [
-    { date: '10 September', body: 'Peter drew the three circles back to me at the shop, badly and out of order, and the shopkeeper listened to the whole thing.', tag: 'Field 2 · Gospel' },
-    { date: '6 September', body: 'Mama Auma’s house read Luke 15 and her daughter asked what repentance means. We sat with the question and did not answer it too fast.', tag: 'Field 3 · Discipleship' },
-    { date: '28 August', body: 'The elders sent me with prayer and laid hands on me. Grace stood beside me. Whatever comes, I was sent.', tag: 'Field 1 · Entry' },
-  ],
-  prayedDays: 19,
+  goals: { convos: 0, studies: 0, trained: 0 },
+  story: { before: '', how: '', since: '', practiced: 0 },
+  oikos: [],
+  churchMarks: {},
+  names: [],
+  entries: [],
+  prayedDays: 0,
 };
 
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function today() {
+  const d = new Date();
+  return d.getDate() + ' ' + MONTHS[d.getMonth()];
+}
+
+function makeId(prefix: string) {
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
 type Action =
+  | { type: 'hydrate'; state: Partial<State> }
   | { type: 'toggleStepAction'; stepId: string; index: number }
   | { type: 'completeStep'; stepId: string }
+  | { type: 'undoStep'; stepId: string }
   | { type: 'closeCelebrate' }
   | { type: 'addGoal'; key: 'convos' | 'studies' | 'trained' }
+  | { type: 'removeGoal'; key: 'convos' | 'studies' | 'trained' }
   | { type: 'setStory'; field: 'before' | 'how' | 'since'; value: string }
   | { type: 'practiceStory' }
   | { type: 'cycleOikos'; id: string }
   | { type: 'addOikos'; text: string }
+  | { type: 'deleteOikos'; id: string }
   | { type: 'toggleChurchMark'; id: string }
   | { type: 'togglePrayed'; id: string }
   | { type: 'addName'; text: string }
-  | { type: 'addEntry'; text: string; tag: string };
+  | { type: 'deleteName'; id: string }
+  | { type: 'addEntry'; text: string; tag: string }
+  | { type: 'deleteEntry'; id: string }
+  | { type: 'markPrayedToday' }
+  | { type: 'resetAll' };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case 'hydrate':
+      return { ...state, ...action.state, hydrated: true, celebrate: null };
     case 'toggleStepAction': {
       const prior = state.checks[action.stepId] || {};
       return { ...state, checks: { ...state.checks, [action.stepId]: { ...prior, [action.index]: !prior[action.index] } } };
     }
     case 'completeStep': {
-      const doneCount = Object.values(state.done).filter(Boolean).length;
+      const count = Object.values(state.done).filter(Boolean).length;
       return {
         ...state,
         done: { ...state.done, [action.stepId]: true },
-        celebrate: ENCOURAGEMENTS[doneCount % ENCOURAGEMENTS.length],
+        celebrate: ENCOURAGEMENTS[count % ENCOURAGEMENTS.length],
       };
+    }
+    case 'undoStep': {
+      const next = { ...state.done };
+      delete next[action.stepId];
+      return { ...state, done: next };
     }
     case 'closeCelebrate':
       return { ...state, celebrate: null };
     case 'addGoal':
       return { ...state, goals: { ...state.goals, [action.key]: state.goals[action.key] + 1 } };
+    case 'removeGoal':
+      return { ...state, goals: { ...state.goals, [action.key]: Math.max(0, state.goals[action.key] - 1) } };
     case 'setStory':
       return { ...state, story: { ...state.story, [action.field]: action.value } };
     case 'practiceStory':
@@ -103,8 +114,10 @@ function reducer(state: State, action: Action): State {
       const t = action.text.trim();
       if (!t) return state;
       const [name, ...rest] = t.split(/,\s*/);
-      return { ...state, oikos: [...state.oikos, { id: 'o' + Date.now(), name, note: rest.join(', ') || 'Added today.', light: 'yellow' }] };
+      return { ...state, oikos: [...state.oikos, { id: makeId('o'), name, note: rest.join(', '), light: 'yellow' }] };
     }
+    case 'deleteOikos':
+      return { ...state, oikos: state.oikos.filter((p) => p.id !== action.id) };
     case 'toggleChurchMark':
       return { ...state, churchMarks: { ...state.churchMarks, [action.id]: !state.churchMarks[action.id] } };
     case 'togglePrayed':
@@ -113,13 +126,21 @@ function reducer(state: State, action: Action): State {
       const t = action.text.trim();
       if (!t) return state;
       const [name, ...rest] = t.split(/,\s*/);
-      return { ...state, names: [...state.names, { id: 'n' + Date.now(), name, note: rest.join(', ') || 'Added today.', prayed: false }] };
+      return { ...state, names: [...state.names, { id: makeId('n'), name, note: rest.join(', '), prayed: false }] };
     }
+    case 'deleteName':
+      return { ...state, names: state.names.filter((n) => n.id !== action.id) };
     case 'addEntry': {
       const t = action.text.trim();
       if (!t) return state;
-      return { ...state, entries: [{ date: 'Today', body: t, tag: action.tag }, ...state.entries] };
+      return { ...state, entries: [{ id: makeId('e'), date: today(), body: t, tag: action.tag }, ...state.entries] };
     }
+    case 'deleteEntry':
+      return { ...state, entries: state.entries.filter((e) => e.id !== action.id) };
+    case 'markPrayedToday':
+      return { ...state, prayedDays: state.prayedDays + 1 };
+    case 'resetAll':
+      return { ...initialState, hydrated: true };
     default:
       return state;
   }
@@ -130,6 +151,41 @@ const DispatchCtx = createContext<React.Dispatch<Action> | null>(null);
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (cancelled) return;
+        if (raw) {
+          try {
+            dispatch({ type: 'hydrate', state: JSON.parse(raw) as Partial<State> });
+            return;
+          } catch {}
+        }
+        dispatch({ type: 'hydrate', state: {} });
+      })
+      .catch(() => {
+        if (!cancelled) dispatch({ type: 'hydrate', state: {} });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!state.hydrated) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      const { hydrated, celebrate, ...persisted } = state;
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(persisted)).catch(() => {});
+    }, 400);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [state]);
+
   return (
     <StateCtx.Provider value={state}>
       <DispatchCtx.Provider value={dispatch}>{children}</DispatchCtx.Provider>
