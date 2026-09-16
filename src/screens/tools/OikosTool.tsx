@@ -3,7 +3,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { Field, Btn } from '../../components/ui';
 import { colors, fonts, space } from '../../theme/tokens';
-import { isOnPrayerList, markLook, oikosLook, useAppDispatch, useAppState, type OikosMark } from '../../state/store';
+import { isOnPrayerList, markLook, namingFor, oikosLook, useAppDispatch, useAppState, type OikosMark } from '../../state/store';
 
 const COLOR_MAP: Record<string, string> = {
   accent700: colors.accent700,
@@ -17,20 +17,36 @@ export function OikosTool() {
   const state = useAppState();
   const dispatch = useAppDispatch();
   const [draft, setDraft] = useState('');
+  const naming = namingFor(state);
 
   const green = state.oikos.filter((p) => p.light === 'green').length;
   const yellow = state.oikos.filter((p) => p.light === 'yellow').length;
   const red = state.oikos.filter((p) => p.light === 'red').length;
 
   const confirmDelete = (id: string, name: string) => {
-    Alert.alert('Remove ' + name + '?', 'This takes them off your map. Anything you wrote about them in your journal stays.', [
+    Alert.alert('Remove ' + name + '?', 'This takes them off your map. Anything you wrote in your journal stays.', [
       { text: 'Keep', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'deleteOikos', id }) },
     ]);
   };
 
+  const confirmToggle = () => {
+    if (!state.discreet) {
+      dispatch({ type: 'toggleDiscreet' });
+      return;
+    }
+    Alert.alert('Use real names?', 'Anyone who picks up this phone will be able to read them. Names already written do not change.', [
+      { text: 'Keep code names', style: 'cancel' },
+      { text: 'Use real names', onPress: () => dispatch({ type: 'toggleDiscreet' }) },
+    ]);
+  };
+
   return (
     <View style={{ paddingTop: space[4] }}>
+      <Pressable onPress={confirmToggle} accessibilityLabel="Change whether this app asks for code names" hitSlop={6}>
+        <Text style={s.banner}>{naming.banner + ' · change'}</Text>
+      </Pressable>
+
       <Text style={s.h6}>{'Your oikos · ' + green + ' green · ' + yellow + ' yellow · ' + red + ' red'}</Text>
 
       {state.oikos.length === 0 && (
@@ -92,7 +108,7 @@ export function OikosTool() {
 
       <View style={{ paddingTop: space[3], flexDirection: 'row', gap: space[2], alignItems: 'flex-end' }}>
         <View style={{ flex: 1 }}>
-          <Field label="Add a name from your household, work, or neighborhood" value={draft} onChangeText={setDraft} placeholder="Name, and how you know them" />
+          <Field label={naming.personLabel} value={draft} onChangeText={setDraft} placeholder={naming.personPlaceholder} />
         </View>
         <Btn
           label="Add"
@@ -103,7 +119,8 @@ export function OikosTool() {
         />
       </View>
 
-      <Text style={[s.helper, { paddingTop: space[4] }]}>
+      <Text style={[s.helper, { paddingTop: space[4] }]}>{naming.explain}</Text>
+      <Text style={[s.helper, { paddingTop: space[2] }]}>
         Tap the mark beside a name to move them between green (open, go now), yellow (unsure, keep loving), and red (closed for now, keep praying). Work the green lights first.
       </Text>
       <Text style={[s.helper, { paddingTop: space[2] }]}>
@@ -114,6 +131,7 @@ export function OikosTool() {
 }
 
 const s = StyleSheet.create({
+  banner: { fontSize: 12, color: colors.accent700, paddingBottom: space[3] },
   h6: { fontFamily: fonts.heading, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: colors.text, marginBottom: space[2] },
   empty: { fontSize: 14, lineHeight: 22, color: 'rgba(32,30,29,0.55)', paddingVertical: space[3] },
   card: { paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: 'rgba(32,30,29,0.10)' },
