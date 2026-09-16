@@ -73,7 +73,7 @@ export function TodayScreen({ navigation }: Props) {
         <Section>
           <Kicker>A word for today</Kicker>
           <Text style={s.verse}>{daily.text}</Text>
-          <Text style={s.verseRef}>{daily.verse.ref + ' · ' + daily.pack.shortName}</Text>
+          <Text style={s.verseRef}>{daily.verse.ref + ' · ' + daily.source.shortName}</Text>
           {daily.verse.reflection && <Text style={[s.body, { marginTop: space[3] }]}>{daily.verse.reflection}</Text>}
 
           <View style={s.packRow}>
@@ -93,9 +93,9 @@ export function TodayScreen({ navigation }: Props) {
             })}
           </View>
           {daily.usedFallback && (
-            <Text style={s.mutedSmall}>This translation is not loaded on your phone yet, so today’s verse is shown in {daily.pack.shortName}.</Text>
+            <Text style={s.mutedSmall}>{daily.pack.name + ' is not loaded on this phone yet, so today’s verse is shown in ' + daily.source.shortName + '.'}</Text>
           )}
-          <Text style={s.attribution}>{daily.pack.attribution}</Text>
+          <Text style={s.attribution}>{daily.source.attribution}</Text>
         </Section>
 
         <Section>
