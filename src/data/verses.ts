@@ -3,12 +3,13 @@
 // DAILY_VERSES is the reference list. Each VersePack supplies the text of those
 // references in one translation, keyed by the same ids.
 //
-// A pack with an empty text map is a pack that has not been filled in yet. The app
-// falls back to a pack that has the verse rather than showing a blank card.
+// A pack with an empty text map has not been loaded yet. Until then the app shows
+// FALLBACK_TEXT so the card is never blank, and says on screen that it is doing so.
+// Once the ULB packs are filled, FALLBACK_TEXT and its pack entry can be deleted.
 //
-// To add a translation: create a pack below, keep the ids identical, and paste the
-// text from the source named in `attribution`. Do not paraphrase or machine-translate
-// Scripture into a pack — take it from the published translation.
+// To fill a pack: keep the ids identical and paste the text from the source named in
+// `attribution`. Do not paraphrase or machine-translate Scripture into a pack — take
+// it from the published translation.
 
 export type DailyVerse = { id: string; ref: string; reflection?: string };
 
@@ -51,7 +52,52 @@ export type VersePack = {
   text: Record<string, string>;
 };
 
-const KJV_TEXT: Record<string, string> = {
+export const PACKS: VersePack[] = [
+  {
+    id: 'en-ulb',
+    name: 'Unlocked Literal Bible (English)',
+    shortName: 'ULB',
+    language: 'English',
+    bundled: true,
+    license: 'CC BY-SA 4.0',
+    attribution:
+      'Unlocked Literal Bible, Wycliffe Associates. Licensed under Creative Commons Attribution-ShareAlike 4.0 International. Available at bibleineverylanguage.org.',
+    sourceUrl: 'https://content.bibletranslationtools.org',
+    text: {},
+  },
+  {
+    id: 'tl-ulb',
+    name: 'Unlocked Literal Bible (Tagalog)',
+    shortName: 'ULB Tagalog',
+    language: 'Tagalog',
+    bundled: true,
+    license: 'CC BY-SA 4.0',
+    attribution:
+      'Unlocked Literal Bible, Wycliffe Associates. Licensed under Creative Commons Attribution-ShareAlike 4.0 International. Available at bibleineverylanguage.org.',
+    sourceUrl: 'https://content.bibletranslationtools.org',
+    text: {},
+  },
+  {
+    id: 'tl-asnd',
+    name: 'Ang Salita ng Diyos',
+    shortName: 'ASND',
+    language: 'Tagalog',
+    bundled: false,
+    license: 'CC BY-SA 4.0',
+    attribution:
+      'Biblica® Open Ang Salita ng Diyos™. Copyright © 2009, 2011, 2014 by Biblica, Inc. The original work by Biblica, Inc. is available for free at www.biblica.com and open.bible. Licensed under Creative Commons Attribution-ShareAlike 4.0 International.',
+    sourceUrl: 'https://open.bible',
+    text: {},
+  },
+];
+
+export const DEFAULT_PACK_ID = 'tl-ulb';
+
+// Temporary. Public domain, so it carries no licence obligation and conflicts with
+// nothing. It exists only so the verse card is never empty while the ULB packs above
+// are still being loaded. Delete this, FALLBACK_SOURCE, and the fallback branch in
+// verseForDate once en-ulb and tl-ulb have their text.
+const FALLBACK_TEXT: Record<string, string> = {
   e1: 'Be ye stedfast, unmoveable, always abounding in the work of the Lord, forasmuch as ye know that your labour is not in vain in the Lord.',
   e2: 'He that goeth forth and weepeth, bearing precious seed, shall doubtless come again with rejoicing, bringing his sheaves with him.',
   e3: 'Let us not be weary in well doing: for in due season we shall reap, if we faint not.',
@@ -78,73 +124,48 @@ const KJV_TEXT: Record<string, string> = {
   p54: 'So that from you the word of the Lord sounded out, not only in Macedonia and Achaia, but also in every place your faith to God-ward is spread abroad.',
 };
 
-export const PACKS: VersePack[] = [
-  {
-    id: 'en-kjv',
-    name: 'King James Version',
-    shortName: 'KJV',
-    language: 'English',
-    bundled: true,
-    license: 'Public domain',
-    attribution: 'King James Version. Public domain.',
-    text: KJV_TEXT,
-  },
-  {
-    id: 'tl-ulb',
-    name: 'Unlocked Literal Bible (Tagalog)',
-    shortName: 'ULB',
-    language: 'Tagalog',
-    bundled: true,
-    license: 'CC BY-SA 4.0',
-    attribution:
-      'Unlocked Literal Bible, Wycliffe Associates. Licensed under Creative Commons Attribution-ShareAlike 4.0 International.',
-    sourceUrl: 'https://content.bibletranslationtools.org',
-    text: {},
-  },
-  {
-    id: 'tl-asnd',
-    name: 'Ang Salita ng Diyos',
-    shortName: 'ASND',
-    language: 'Tagalog',
-    bundled: false,
-    license: 'CC BY-SA 4.0',
-    attribution:
-      'Biblica® Open Ang Salita ng Diyos™. Copyright © 2009, 2011, 2014 by Biblica, Inc. The original work by Biblica, Inc. is available for free at www.biblica.com and open.bible. Licensed under Creative Commons Attribution-ShareAlike 4.0 International.',
-    sourceUrl: 'https://open.bible',
-    text: {},
-  },
-];
-
-export const DEFAULT_PACK_ID = 'tl-ulb';
-export const FALLBACK_PACK_ID = 'en-kjv';
+const FALLBACK_SOURCE = {
+  shortName: 'KJV',
+  attribution: 'King James Version. Public domain. Shown until the chosen translation is loaded on this phone.',
+};
 
 export function packById(id: string) {
   return PACKS.find((p) => p.id === id);
 }
 
-export function packIsFilled(pack: VersePack) {
+export function packIsLoaded(pack: VersePack) {
   return Object.keys(pack.text).length > 0;
+}
+
+export function loadedPacks() {
+  return PACKS.filter(packIsLoaded);
 }
 
 // Index by whole days since the epoch, so every user sees the same verse on a given
 // day and the list advances without any stored state.
 export function verseIndexForDate(d: Date) {
-  const days = Math.floor(
-    Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000
-  );
+  const days = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
   return ((days % DAILY_VERSES.length) + DAILY_VERSES.length) % DAILY_VERSES.length;
 }
 
 export function verseForDate(d: Date, packId: string) {
   const verse = DAILY_VERSES[verseIndexForDate(d)];
-  const chosen = packById(packId);
-  const fallback = packById(FALLBACK_PACK_ID)!;
-  const text = chosen && chosen.text[verse.id] ? chosen.text[verse.id] : fallback.text[verse.id];
-  const usedFallback = !(chosen && chosen.text[verse.id]);
+  const pack = packById(packId) || PACKS[0];
+  const own = pack.text[verse.id];
+  if (own) {
+    return {
+      verse,
+      text: own,
+      pack,
+      source: { shortName: pack.shortName, attribution: pack.attribution },
+      usedFallback: false,
+    };
+  }
   return {
     verse,
-    text,
-    pack: usedFallback ? fallback : chosen || fallback,
-    usedFallback,
+    text: FALLBACK_TEXT[verse.id],
+    pack,
+    source: FALLBACK_SOURCE,
+    usedFallback: true,
   };
 }
