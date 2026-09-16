@@ -23,6 +23,7 @@ export type Group = {
 
 type State = {
   hydrated: boolean;
+  discreet: boolean;
   done: Record<string, boolean>;
   checks: Record<string, Record<number, boolean>>;
   celebrate: Encouragement | null;
@@ -42,6 +43,7 @@ const noMarks: OikosMarks = { convo: false, study: false, trained: false };
 
 const initialState: State = {
   hydrated: false,
+  discreet: true,
   done: {},
   checks: {},
   celebrate: null,
@@ -72,11 +74,13 @@ function normalize(raw: Partial<State>): Partial<State> {
     out.oikos = raw.oikos.map((p) => ({ ...p, marks: { ...noMarks, ...(p as OikosPerson).marks } }));
   }
   if (!Array.isArray(raw.groups)) out.groups = [];
+  if (typeof raw.discreet !== 'boolean') out.discreet = true;
   return out;
 }
 
 type Action =
   | { type: 'hydrate'; state: Partial<State> }
+  | { type: 'toggleDiscreet' }
   | { type: 'toggleStepAction'; stepId: string; index: number }
   | { type: 'completeStep'; stepId: string }
   | { type: 'undoStep'; stepId: string }
@@ -108,6 +112,8 @@ function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'hydrate':
       return { ...state, ...normalize(action.state), hydrated: true, celebrate: null };
+    case 'toggleDiscreet':
+      return { ...state, discreet: !state.discreet };
     case 'toggleStepAction': {
       const prior = state.checks[action.stepId] || {};
       return { ...state, checks: { ...state.checks, [action.stepId]: { ...prior, [action.index]: !prior[action.index] } } };
@@ -223,7 +229,7 @@ function reducer(state: State, action: Action): State {
     case 'markPrayedToday':
       return { ...state, prayedDays: state.prayedDays + 1 };
     case 'resetAll':
-      return { ...initialState, hydrated: true };
+      return { ...initialState, hydrated: true, discreet: state.discreet };
     default:
       return state;
   }
@@ -286,6 +292,39 @@ export function useAppDispatch() {
   const d = useContext(DispatchCtx);
   if (!d) throw new Error('useAppDispatch must be used within AppStateProvider');
   return d;
+}
+
+// --- Discreet naming ---
+// When discreet is on, every prompt asks for a code name. The app stores only what
+// the user types, so a real name is never written to the device unless they choose to.
+
+export const naming = {
+  on: {
+    personLabel: 'Add a code name for someone you know',
+    personPlaceholder: 'Code name, and how you know them',
+    groupLabel: 'Add a group by code name',
+    groupPlaceholder: 'Code name, and a hint of where it meets',
+    prayerLabel: 'Add someone to carry, by code name',
+    prayerPlaceholder: 'Code name, and one line about them',
+    banner: 'Code names on · this phone stores only what you type',
+    explain:
+      'Use a code name only you would recognise — not a real name, and not a place that identifies them. If this phone is lost or taken, no one on it can be found from what you wrote.',
+  },
+  off: {
+    personLabel: 'Add a name from your household, work, or neighborhood',
+    personPlaceholder: 'Name, and how you know them',
+    groupLabel: 'Add a group',
+    groupPlaceholder: 'Name, and where it meets',
+    prayerLabel: 'Add someone to carry',
+    prayerPlaceholder: 'Name, and one line about them',
+    banner: 'Real names on · anyone with this phone can read them',
+    explain:
+      'Real names are easier to pray over, and they are also readable by anyone who takes this phone. Where believing carries a cost, switch code names back on.',
+  },
+};
+
+export function namingFor(state: State) {
+  return state.discreet ? naming.on : naming.off;
 }
 
 // --- Derived selectors, ported from the prototype's renderVals() ---
