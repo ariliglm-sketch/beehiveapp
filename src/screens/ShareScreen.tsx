@@ -18,6 +18,7 @@ import {
   doneCount,
   goalTotals,
   oikosLightCounts,
+  parseCoachNoteText,
   reportSummary,
   toolsOpenedCount,
   useAppDispatch,
@@ -35,6 +36,8 @@ export function ShareScreen({ navigation }: Props) {
   const [sections, setSections] = useState<ReportSections>(ALL_ON);
   const [journalTicks, setJournalTicks] = useState<Record<string, boolean>>({});
   const [note, setNote] = useState('');
+  const [pasteNote, setPasteNote] = useState('');
+  const [noteError, setNoteError] = useState('');
 
   const journalIds = useMemo(() => Object.keys(journalTicks).filter((id) => journalTicks[id]), [journalTicks]);
   const reportText = useMemo(() => composeReportText(state, sections, journalIds, note), [state, sections, journalIds, note]);
@@ -74,6 +77,17 @@ export function ShareScreen({ navigation }: Props) {
     );
   };
 
+  const readCoachNote = () => {
+    const result = parseCoachNoteText(pasteNote);
+    if (!result.ok) {
+      setNoteError(result.reason);
+      return;
+    }
+    setNoteError('');
+    dispatch({ type: 'receiveCoachNote', note: result.data });
+    setPasteNote('');
+  };
+
   const doSend = async () => {
     const summary = reportSummary(sections, journalIds.length);
     try {
@@ -103,6 +117,22 @@ export function ShareScreen({ navigation }: Props) {
         <Pressable onPress={() => navigation.navigate('Flock')} style={{ paddingTop: space[4] }} hitSlop={4}>
           <Text style={s.link}>I am coaching others — open my flock</Text>
         </Pressable>
+
+        <View style={{ paddingTop: space[6] }}>
+          <Field
+            label="Something from your coach?"
+            value={pasteNote}
+            onChangeText={(t) => {
+              setPasteNote(t);
+              if (noteError) setNoteError('');
+            }}
+            placeholder="Paste the note your coach sent here"
+            multiline
+          />
+          {noteError.length > 0 && <Text style={s.error}>{noteError}</Text>}
+          <Btn label="Read it" onPress={readCoachNote} style={{ marginTop: space[2], alignSelf: 'flex-start' }} />
+          <Text style={s.mutedSmall}>It will show on your Today screen until you have read it.</Text>
+        </View>
 
         <Text style={[s.kicker, { paddingTop: space[6] }]}>What you are sending</Text>
         {REPORT_SECTION_ORDER.map((key) => {
@@ -195,6 +225,7 @@ export function ShareScreen({ navigation }: Props) {
 const s = StyleSheet.create({
   kicker: { fontFamily: fonts.heading, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: colors.text, marginBottom: space[2] },
   link: { fontFamily: fonts.heading, fontSize: 14, color: colors.accent },
+  error: { fontSize: 13, color: colors.neutral600, paddingTop: space[1] },
   checkRow: { flexDirection: 'row', gap: space[3], alignItems: 'flex-start', paddingVertical: space[2] },
   checkLabel: { fontFamily: fonts.heading, fontWeight: '600', fontSize: 15, color: colors.text },
   checkValue: { fontSize: 12, color: 'rgba(32,30,29,0.55)', marginTop: 2 },

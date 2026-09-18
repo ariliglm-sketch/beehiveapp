@@ -48,6 +48,19 @@ export type FlockEntry = {
   addedAt: string;
   lastReceivedAt?: string;
   lastReport?: ParsedReport;
+  lastNoteSentAt?: string;
+};
+
+export type CoachNote = {
+  date: string;
+  verseRef?: string;
+  verseText?: string;
+  verseSource?: string;
+  words?: string;
+  stepId?: string;
+  stepTitle?: string;
+  checkIn?: string;
+  receivedAt: string;
 };
 
 type State = {
@@ -69,6 +82,7 @@ type State = {
   myCodeName: string;
   sentReports: SentReport[];
   flock: FlockEntry[];
+  coachNote: CoachNote | null;
 };
 
 const STORAGE_KEY = 'beehive.state.v1';
@@ -94,6 +108,7 @@ const initialState: State = {
   myCodeName: '',
   sentReports: [],
   flock: [],
+  coachNote: null,
 };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -123,6 +138,7 @@ function normalize(raw: Partial<State>): Partial<State> {
   if (typeof raw.myCodeName !== 'string') out.myCodeName = '';
   if (!Array.isArray(raw.sentReports)) out.sentReports = [];
   if (!Array.isArray(raw.flock)) out.flock = [];
+  if (typeof raw.coachNote === 'undefined') out.coachNote = null;
   return out;
 }
 
@@ -159,6 +175,9 @@ type Action =
   | { type: 'addFlockWatch'; codeName: string }
   | { type: 'deleteFlockEntry'; id: string }
   | { type: 'ingestFlockReport'; parsed: ParsedReport }
+  | { type: 'recordNoteSent'; id: string }
+  | { type: 'receiveCoachNote'; note: CoachNote }
+  | { type: 'dismissCoachNote' }
   | { type: 'resetAll' };
 
 const STAGE_ORDER: GroupStage[] = ['study', 'group', 'church'];
@@ -315,6 +334,12 @@ function reducer(state: State, action: Action): State {
       }
       return { ...state, flock: [...state.flock, { id: makeId('f'), codeName: name, addedAt: now, lastReport: action.parsed, lastReceivedAt: now }] };
     }
+    case 'recordNoteSent':
+      return { ...state, flock: state.flock.map((f) => (f.id === action.id ? { ...f, lastNoteSentAt: new Date().toISOString() } : f)) };
+    case 'receiveCoachNote':
+      return { ...state, coachNote: action.note };
+    case 'dismissCoachNote':
+      return { ...state, coachNote: null };
     case 'resetAll':
       return { ...initialState, hydrated: true, discreet: state.discreet, packId: state.packId, myCodeName: state.myCodeName };
     default:
@@ -698,4 +723,80 @@ export function sortedFlock(state: State) {
 export function daysSince(iso: string): number {
   const ms = Date.now() - new Date(iso).getTime();
   return Math.max(0, Math.floor(ms / 86400000));
+}
+
+// --- Coach note (coach → pastor), the same transport in reverse ---
+//
+// A coach writes this from the Flock screen and it goes out through the same
+// OS share sheet the pastor's report used — there is still no server and no
+// second account. The pastor pastes what they received on the Share screen,
+// which files it as the single coachNote shown on Today until dismissed. The
+// step id travels in parentheses so the assigned step can be opened directly;
+// if it does not match a step on this phone, StepScreen falls back safely
+// rather than crashing.
+
+const NOTE_HEADER = 'BEEHIVE NOTE v1';
+
+export function composeCoachNoteText(
+  verse: { ref: string; text: string; source: string } | null,
+  words: string,
+  step: { id: string; title: string } | null,
+  checkIn: string
+): string {
+  const lines: string[] = [NOTE_HEADER];
+  lines.push('Date: ' + reportDate(new Date()));
+  if (verse) {
+    lines.push('Verse: ' + verse.ref + ' — ' + verse.text + ' (' + verse.source + ')');
+  }
+  if (words.trim()) {
+    lines.push('Words: ' + words.trim());
+  }
+  if (step) {
+    lines.push('Step: ' + step.title + ' (' + step.id + ')');
+  }
+  if (checkIn.trim()) {
+    lines.push('Check-in: ' + checkIn.trim());
+  }
+  return lines.join('\n');
+}
+
+export function parseCoachNoteText(raw: string): { ok: true; data: CoachNote } | { ok: false; reason: string } {
+  const text = raw.trim();
+  if (!text) {
+    return { ok: false, reason: 'Paste the note your coach sent, then try again.' };
+  }
+  const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+  if (lines[0] !== NOTE_HEADER) {
+    return { ok: false, reason: 'That does not look like a note from a coach. It should start with "' + NOTE_HEADER + '".' };
+  }
+  const data: Partial<CoachNote> = {};
+  for (const line of lines.slice(1)) {
+    const m = line.match(/^([A-Za-z][A-Za-z ()0-9-]*?):\s*(.*)$/);
+    if (!m) continue;
+    const key = m[1].trim();
+    const value = m[2].trim();
+    if (key === 'Date') data.date = value;
+    else if (key === 'Verse') {
+      const vm = value.match(/^(.*?) — (.*) \(([^)]+)\)$/);
+      if (vm) {
+        data.verseRef = vm[1].trim();
+        data.verseText = vm[2].trim();
+        data.verseSource = vm[3].trim();
+      }
+    } else if (key === 'Words') data.words = value;
+    else if (key === 'Step') {
+      const sm = value.match(/^(.*) \(([A-Za-z0-9]+)\)$/);
+      if (sm) {
+        data.stepTitle = sm[1].trim();
+        data.stepId = sm[2].trim();
+      } else {
+        data.stepTitle = value;
+      }
+    } else if (key === 'Check-in') data.checkIn = value;
+  }
+  if (!data.date) {
+    return { ok: false, reason: 'This note is missing its date, so it may not have copied correctly.' };
+  }
+  data.receivedAt = new Date().toISOString();
+  return { ok: true, data: data as CoachNote };
 }

@@ -169,3 +169,16 @@ export function verseForDate(d: Date, packId: string) {
     usedFallback: true,
   };
 }
+
+// Same lookup as verseForDate, but by a specific verse id rather than today's date.
+// Used by a coach picking a verse to send, from the same 24-verse bank.
+export function textForVerseId(verseId: string, packId: string) {
+  const verse = DAILY_VERSES.find((v) => v.id === verseId);
+  if (!verse) return null;
+  const pack = packById(packId) || PACKS[0];
+  const own = pack.text[verse.id];
+  if (own) {
+    return { verse, text: own, source: { shortName: pack.shortName, attribution: pack.attribution }, usedFallback: false };
+  }
+  return { verse, text: FALLBACK_TEXT[verse.id], source: FALLBACK_SOURCE, usedFallback: true };
+}

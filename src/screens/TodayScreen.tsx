@@ -47,6 +47,39 @@ export function TodayScreen({ navigation }: Props) {
           />
         </Section>
 
+        {state.coachNote && (
+          <Section>
+            <Kicker tone="accent">From your coach</Kicker>
+            {state.coachNote.verseText && (
+              <>
+                <Text style={s.verse}>{state.coachNote.verseText}</Text>
+                <Text style={s.verseRef}>
+                  {(state.coachNote.verseRef ?? '') + (state.coachNote.verseSource ? ' · ' + state.coachNote.verseSource : '')}
+                </Text>
+              </>
+            )}
+            {state.coachNote.words && <Text style={[s.body, { marginTop: space[3] }]}>{state.coachNote.words}</Text>}
+            {state.coachNote.stepTitle && (
+              <Btn
+                label={'Open: ' + state.coachNote.stepTitle}
+                variant="secondary"
+                onPress={() => {
+                  const id = state.coachNote?.stepId;
+                  if (id) navigation.navigate('Step', { stepId: id });
+                }}
+                style={{ marginTop: space[3], alignSelf: 'flex-start' }}
+              />
+            )}
+            {state.coachNote.checkIn && <Text style={[s.muted, { marginTop: space[3] }]}>{'You will talk: ' + state.coachNote.checkIn}</Text>}
+            <Btn
+              label="Got it"
+              variant="ghost"
+              onPress={() => dispatch({ type: 'dismissCoachNote' })}
+              style={{ marginTop: space[2], alignSelf: 'flex-start' }}
+            />
+          </Section>
+        )}
+
         <Section>
           <Kicker>This week in the field</Kicker>
           {GOAL_META.map((g) => {
