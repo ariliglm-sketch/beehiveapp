@@ -24,10 +24,17 @@ export type JournalStackParamList = {
   Journal: undefined;
 };
 
+export type ShareStackParamList = {
+  Share: undefined;
+  Flock: undefined;
+  FlockMember: { id: string };
+};
+
 export type RootTabParamList = {
   Today: undefined;
   Fields: undefined;
   Tools: undefined;
   Prayer: undefined;
   Journal: undefined;
+  Share: undefined;
 };

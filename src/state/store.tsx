@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ALL_STEPS, CHURCH_MARKS, ENCOURAGEMENTS, PARTS, type Part } from '../data/content';
+import { ALL_TOOLS } from '../data/toolbox';
 import { DEFAULT_PACK_ID } from '../data/verses';
 
 export type Encouragement = (typeof ENCOURAGEMENTS)[number];
@@ -22,6 +23,33 @@ export type Group = {
   startedByPersonId?: string;
 };
 
+export type ReportSections = { field: boolean; counts: boolean; lights: boolean; prayer: boolean; map: boolean; tools: boolean };
+
+export type ParsedReport = {
+  from: string;
+  date?: string;
+  field?: string;
+  talks?: string;
+  studies?: string;
+  trained?: string;
+  lights?: string;
+  prayer?: string;
+  map?: string;
+  stalled?: string;
+  tools?: string;
+  journal?: { date: string; body: string }[];
+  note?: string;
+};
+
+export type SentReport = { id: string; date: string; summary: string; hadJournal: boolean };
+export type FlockEntry = {
+  id: string;
+  codeName: string;
+  addedAt: string;
+  lastReceivedAt?: string;
+  lastReport?: ParsedReport;
+};
+
 type State = {
   hydrated: boolean;
   discreet: boolean;
@@ -37,6 +65,10 @@ type State = {
   entries: JournalEntry[];
   groups: Group[];
   prayedDays: number;
+  toolsOpened: Record<string, boolean>;
+  myCodeName: string;
+  sentReports: SentReport[];
+  flock: FlockEntry[];
 };
 
 const STORAGE_KEY = 'beehive.state.v1';
@@ -58,6 +90,10 @@ const initialState: State = {
   entries: [],
   groups: [],
   prayedDays: 0,
+  toolsOpened: {},
+  myCodeName: '',
+  sentReports: [],
+  flock: [],
 };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -65,6 +101,10 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 function today() {
   const d = new Date();
   return d.getDate() + ' ' + MONTHS[d.getMonth()];
+}
+
+function reportDate(d: Date) {
+  return d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear();
 }
 
 function makeId(prefix: string) {
@@ -79,6 +119,10 @@ function normalize(raw: Partial<State>): Partial<State> {
   if (!Array.isArray(raw.groups)) out.groups = [];
   if (typeof raw.discreet !== 'boolean') out.discreet = true;
   if (typeof raw.packId !== 'string') out.packId = DEFAULT_PACK_ID;
+  if (!raw.toolsOpened || typeof raw.toolsOpened !== 'object') out.toolsOpened = {};
+  if (typeof raw.myCodeName !== 'string') out.myCodeName = '';
+  if (!Array.isArray(raw.sentReports)) out.sentReports = [];
+  if (!Array.isArray(raw.flock)) out.flock = [];
   return out;
 }
 
@@ -109,6 +153,12 @@ type Action =
   | { type: 'cycleGroupStage'; id: string }
   | { type: 'deleteGroup'; id: string }
   | { type: 'markPrayedToday' }
+  | { type: 'markToolOpened'; toolId: string }
+  | { type: 'setMyCodeName'; text: string }
+  | { type: 'recordSentReport'; summary: string; hadJournal: boolean }
+  | { type: 'addFlockWatch'; codeName: string }
+  | { type: 'deleteFlockEntry'; id: string }
+  | { type: 'ingestFlockReport'; parsed: ParsedReport }
   | { type: 'resetAll' };
 
 const STAGE_ORDER: GroupStage[] = ['study', 'group', 'church'];
@@ -235,8 +285,38 @@ function reducer(state: State, action: Action): State {
     }
     case 'markPrayedToday':
       return { ...state, prayedDays: state.prayedDays + 1 };
+    case 'markToolOpened':
+      return state.toolsOpened[action.toolId] ? state : { ...state, toolsOpened: { ...state.toolsOpened, [action.toolId]: true } };
+    case 'setMyCodeName':
+      return { ...state, myCodeName: action.text };
+    case 'recordSentReport':
+      return {
+        ...state,
+        sentReports: [{ id: makeId('r'), date: today(), summary: action.summary, hadJournal: action.hadJournal }, ...state.sentReports],
+      };
+    case 'addFlockWatch': {
+      const t = action.codeName.trim();
+      if (!t) return state;
+      if (state.flock.some((f) => f.codeName.toLowerCase() === t.toLowerCase())) return state;
+      return { ...state, flock: [...state.flock, { id: makeId('f'), codeName: t, addedAt: new Date().toISOString() }] };
+    }
+    case 'deleteFlockEntry':
+      return { ...state, flock: state.flock.filter((f) => f.id !== action.id) };
+    case 'ingestFlockReport': {
+      const name = action.parsed.from.trim();
+      if (!name) return state;
+      const now = new Date().toISOString();
+      const existing = state.flock.find((f) => f.codeName.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        return {
+          ...state,
+          flock: state.flock.map((f) => (f.id === existing.id ? { ...f, lastReport: action.parsed, lastReceivedAt: now } : f)),
+        };
+      }
+      return { ...state, flock: [...state.flock, { id: makeId('f'), codeName: name, addedAt: now, lastReport: action.parsed, lastReceivedAt: now }] };
+    }
     case 'resetAll':
-      return { ...initialState, hydrated: true, discreet: state.discreet, packId: state.packId };
+      return { ...initialState, hydrated: true, discreet: state.discreet, packId: state.packId, myCodeName: state.myCodeName };
     default:
       return state;
   }
@@ -360,6 +440,8 @@ export function markedCount(state: State, mark: OikosMark) {
   return state.oikos.filter((p) => p.marks[mark]).length;
 }
 
+export const GOAL_TARGETS = { convos: 5, studies: 2, trained: 3 };
+
 export function goalTotals(state: State) {
   return {
     convos: state.goals.convos + markedCount(state, 'convo'),
@@ -375,6 +457,18 @@ export function isOnPrayerList(state: State, oikosId: string) {
 export function personName(state: State, personId?: string) {
   if (!personId) return null;
   return state.oikos.find((p) => p.id === personId)?.name ?? null;
+}
+
+export function oikosLightCounts(state: State) {
+  return {
+    green: state.oikos.filter((p) => p.light === 'green').length,
+    yellow: state.oikos.filter((p) => p.light === 'yellow').length,
+    red: state.oikos.filter((p) => p.light === 'red').length,
+  };
+}
+
+export function toolsOpenedCount(state: State) {
+  return Object.values(state.toolsOpened).filter(Boolean).length;
 }
 
 // --- Generational map ---
@@ -469,3 +563,139 @@ export const stageLook: Record<GroupStage, { label: string; tone: 'accent' | 'ne
   group: { label: 'Group', tone: 'neutral' },
   church: { label: 'Church', tone: 'accent' },
 };
+
+// --- Share report (pastor → coach) ---
+//
+// Bee Hive has no server and no accounts, so "Send to your coach" cannot sync
+// anything on its own. Instead it composes a short plain-text message
+// (composeReportText) and hands it to the phone's own OS share sheet —
+// WhatsApp, SMS, email, whatever the pastor already uses. The coach pastes
+// whatever they received back into their own copy of the app (parseReportText),
+// which files it under the "From:" code name on the Flock screen. No person on
+// the oikos map is ever named in the wire format below — only counts. Groups
+// travel under whatever code name the pastor already gave them.
+
+const REPORT_HEADER = 'BEEHIVE REPORT v1';
+
+export const REPORT_SECTION_LABELS: Record<keyof ReportSections, string> = {
+  field: 'Steps walked / which field you are in',
+  counts: 'Weekly counts (conversations, studies, trained)',
+  lights: 'Oikos light counts (green, yellow, red)',
+  prayer: 'Prayer streak',
+  map: 'Generational map',
+  tools: 'Tools used',
+};
+
+export const REPORT_SECTION_ORDER: (keyof ReportSections)[] = ['field', 'counts', 'lights', 'prayer', 'map', 'tools'];
+
+export function composeReportText(state: State, sections: ReportSections, journalIds: string[], note: string): string {
+  const lines: string[] = [REPORT_HEADER];
+  lines.push('From: ' + (state.myCodeName.trim() || 'A pastor'));
+  lines.push('Date: ' + reportDate(new Date()));
+
+  if (sections.field) {
+    const n = activePartNum(state);
+    const part = PARTS.find((p) => p.n === n)!;
+    lines.push('Field: ' + n + ' ' + part.title + ' — ' + doneCount(state) + ' steps walked');
+  }
+  if (sections.counts) {
+    const totals = goalTotals(state);
+    lines.push('Talks: ' + totals.convos + '/' + GOAL_TARGETS.convos);
+    lines.push('Studies: ' + totals.studies + '/' + GOAL_TARGETS.studies);
+    lines.push('Trained: ' + totals.trained + '/' + GOAL_TARGETS.trained);
+  }
+  if (sections.lights) {
+    const l = oikosLightCounts(state);
+    lines.push('Lights: ' + l.green + ' green, ' + l.yellow + ' yellow, ' + l.red + ' red');
+  }
+  if (sections.prayer) {
+    lines.push('Prayer: ' + state.prayedDays + ' days');
+  }
+  if (sections.map) {
+    lines.push('Map: ' + state.groups.length + ' groups, ' + deepestGeneration(state) + ' generations');
+    const stalled = stalledGroups(state);
+    if (state.groups.length > 0 && stalled.length > 0) {
+      lines.push('Stalled: ' + stalled.slice(0, 3).map((g) => g.name).join(', '));
+    }
+  }
+  if (sections.tools) {
+    lines.push('Tools: ' + toolsOpenedCount(state) + ' of ' + ALL_TOOLS.length);
+  }
+  for (const id of journalIds) {
+    const entry = state.entries.find((e) => e.id === id);
+    if (entry) lines.push('Journal (' + entry.date + '): ' + entry.body);
+  }
+  if (note.trim()) {
+    lines.push('Note: ' + note.trim());
+  }
+  return lines.join('\n');
+}
+
+export function reportSummary(sections: ReportSections, journalCount: number): string {
+  const parts = REPORT_SECTION_ORDER.filter((k) => sections[k]).map((k) => {
+    if (k === 'field') return 'Steps';
+    if (k === 'counts') return 'counts';
+    if (k === 'lights') return 'lights';
+    if (k === 'prayer') return 'prayer days';
+    if (k === 'map') return 'map';
+    return 'tools';
+  });
+  const base = parts.length ? parts.join(', ') + '.' : 'Nothing checked.';
+  const journalLine = journalCount > 0 ? journalCount + ' journal entr' + (journalCount === 1 ? 'y' : 'ies') + ', word for word.' : 'No journal entries, no names.';
+  return base + ' ' + journalLine;
+}
+
+export function parseReportText(raw: string): { ok: true; data: ParsedReport } | { ok: false; reason: string } {
+  const text = raw.trim();
+  if (!text) {
+    return { ok: false, reason: 'Paste the message your pastor sent, then try again.' };
+  }
+  const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+  if (lines[0] !== REPORT_HEADER) {
+    return { ok: false, reason: 'That does not look like a Bee Hive report. It should start with "' + REPORT_HEADER + '".' };
+  }
+  const data: Partial<ParsedReport> = {};
+  const journal: { date: string; body: string }[] = [];
+  for (const line of lines.slice(1)) {
+    const m = line.match(/^([A-Za-z][A-Za-z ()0-9]*?):\s*(.*)$/);
+    if (!m) continue;
+    const key = m[1].trim();
+    const value = m[2].trim();
+    if (key === 'From') data.from = value;
+    else if (key === 'Date') data.date = value;
+    else if (key === 'Field') data.field = value;
+    else if (key === 'Talks') data.talks = value;
+    else if (key === 'Studies') data.studies = value;
+    else if (key === 'Trained') data.trained = value;
+    else if (key === 'Lights') data.lights = value;
+    else if (key === 'Prayer') data.prayer = value;
+    else if (key === 'Map') data.map = value;
+    else if (key === 'Stalled') data.stalled = value;
+    else if (key === 'Tools') data.tools = value;
+    else if (key === 'Note') data.note = value;
+    else if (key.indexOf('Journal') === 0) {
+      const dateMatch = key.match(/\(([^)]*)\)/);
+      journal.push({ date: dateMatch ? dateMatch[1] : '', body: value });
+    }
+  }
+  if (!data.from) {
+    return { ok: false, reason: 'This report has no "From:" line, so there is no code name to file it under.' };
+  }
+  if (journal.length > 0) data.journal = journal;
+  return { ok: true, data: data as ParsedReport };
+}
+
+export function sortedFlock(state: State) {
+  return [...state.flock].sort((a, b) => {
+    const aReported = !!a.lastReceivedAt;
+    const bReported = !!b.lastReceivedAt;
+    if (aReported !== bReported) return aReported ? 1 : -1;
+    if (!aReported && !bReported) return a.addedAt.localeCompare(b.addedAt);
+    return (a.lastReceivedAt as string).localeCompare(b.lastReceivedAt as string);
+  });
+}
+
+export function daysSince(iso: string): number {
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.max(0, Math.floor(ms / 86400000));
+}

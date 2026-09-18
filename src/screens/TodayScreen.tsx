@@ -8,11 +8,10 @@ import { CmykNumeral } from '../components/CmykNumeral';
 import { colors, fonts, space } from '../theme/tokens';
 import { PARTS } from '../data/content';
 import { PACKS, verseForDate } from '../data/verses';
-import { activePartNum, doneCount, goalTotals, markedCount, nextStep, useAppDispatch, useAppState, type OikosMark } from '../state/store';
+import { GOAL_TARGETS, activePartNum, doneCount, goalTotals, markedCount, nextStep, useAppDispatch, useAppState, type OikosMark } from '../state/store';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'Today'>;
 
-const GOAL_TARGETS = { convos: 5, studies: 2, trained: 3 };
 const GOAL_META = [
   { key: 'convos' as const, mark: 'convo' as OikosMark, label: 'Gospel conversations', note: 'Your story and God’s story, out loud' },
   { key: 'studies' as const, mark: 'study' as OikosMark, label: 'New studies started', note: 'In a home, with the household present' },

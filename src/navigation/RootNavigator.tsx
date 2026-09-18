@@ -11,11 +11,15 @@ import { ToolsListScreen } from '../screens/ToolsListScreen';
 import { ToolScreen } from '../screens/ToolScreen';
 import { PrayerScreen } from '../screens/PrayerScreen';
 import { JournalScreen } from '../screens/JournalScreen';
+import { ShareScreen } from '../screens/ShareScreen';
+import { FlockScreen } from '../screens/FlockScreen';
+import { FlockMemberScreen } from '../screens/FlockMemberScreen';
 import type {
   FieldsStackParamList,
   JournalStackParamList,
   PrayerStackParamList,
   RootTabParamList,
+  ShareStackParamList,
   TodayStackParamList,
   ToolsStackParamList,
 } from './types';
@@ -26,6 +30,7 @@ const FieldsStack = createNativeStackNavigator<FieldsStackParamList>();
 const ToolsStack = createNativeStackNavigator<ToolsStackParamList>();
 const PrayerStack = createNativeStackNavigator<PrayerStackParamList>();
 const JournalStack = createNativeStackNavigator<JournalStackParamList>();
+const ShareStack = createNativeStackNavigator<ShareStackParamList>();
 
 function TodayStackNavigator() {
   return (
@@ -73,12 +78,23 @@ function JournalStackNavigator() {
   );
 }
 
+function ShareStackNavigator() {
+  return (
+    <ShareStack.Navigator screenOptions={{ headerShown: false }}>
+      <ShareStack.Screen name="Share" component={ShareScreen} />
+      <ShareStack.Screen name="Flock" component={FlockScreen} />
+      <ShareStack.Screen name="FlockMember" component={FlockMemberScreen} />
+    </ShareStack.Navigator>
+  );
+}
+
 const TAB_ICON: Record<keyof RootTabParamList, string> = {
   Today: 'SunHorizon',
   Fields: 'Plant',
   Tools: 'Toolbox',
   Prayer: 'HandsPraying',
   Journal: 'Notebook',
+  Share: 'PaperPlaneTilt',
 };
 
 export function RootNavigator() {
@@ -99,6 +115,7 @@ export function RootNavigator() {
       <Tab.Screen name="Tools" component={ToolsStackNavigator} />
       <Tab.Screen name="Prayer" component={PrayerStackNavigator} />
       <Tab.Screen name="Journal" component={JournalStackNavigator} />
+      <Tab.Screen name="Share" component={ShareStackNavigator} />
     </Tab.Navigator>
   );
 }

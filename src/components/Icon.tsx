@@ -28,6 +28,7 @@ import {
   SwordIcon,
   HandIcon,
   PathIcon,
+  PaperPlaneTiltIcon,
   type Icon as PhosphorIcon,
 } from 'phosphor-react-native';
 
@@ -60,6 +61,7 @@ const REGISTRY: Record<string, PhosphorIcon> = {
   Sword: SwordIcon,
   Hand: HandIcon,
   Path: PathIcon,
+  PaperPlaneTilt: PaperPlaneTiltIcon,
 };
 
 export function Icon({

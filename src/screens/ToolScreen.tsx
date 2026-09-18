@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ToolsStackParamList } from '../navigation/types';
 import { BareHeader } from '../components/Header';
 import { colors, fonts, space } from '../theme/tokens';
 import { ALL_TOOLS } from '../data/toolbox';
+import { useAppDispatch } from '../state/store';
 import { OikosTool } from './tools/OikosTool';
 import { StoryTool } from './tools/StoryTool';
 import { CirclesTool } from './tools/CirclesTool';
@@ -15,6 +16,11 @@ type Props = NativeStackScreenProps<ToolsStackParamList, 'Tool'>;
 
 export function ToolScreen({ route, navigation }: Props) {
   const tool = ALL_TOOLS.find((t) => t.id === route.params.toolId) ?? ALL_TOOLS[0];
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch({ type: 'markToolOpened', toolId: tool.id });
+  }, [tool.id]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
