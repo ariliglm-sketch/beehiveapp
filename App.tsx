@@ -16,6 +16,7 @@ import { AppStateProvider } from './src/state/store';
 import { navigationRef } from './src/navigation/navigationRef';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { CelebrateModal } from './src/components/CelebrateModal';
+import { ConfirmModal } from './src/lib/confirm';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -44,6 +45,7 @@ export default function App() {
           <NavigationContainer ref={navigationRef}>
             <RootNavigator />
             <CelebrateModal />
+            <ConfirmModal />
           </NavigationContainer>
           <StatusBar style="dark" />
         </AppStateProvider>

@@ -7,6 +7,7 @@ export type Step = {
   title: string;
   teaser: string;
   toolLabel?: string;
+  toolId?: string;
   verse: string;
   verseRef: string;
   why: string;
@@ -46,7 +47,7 @@ export const PARTS: Part[] = [
         heart: 'You already have a field. You did not have to move or raise money to get it. Those names are the assignment.',
         prayer: 'Lord, show me which of these you have already prepared, and give me courage to go first to them.',
         hard: 'If every name feels red, go to the yellow ones with kindness and no agenda. Lights change.' },
-      { id: 'p13', title: 'Search for a house of peace', teaser: 'Go two by two. Bless, eat, serve, tell of the kingdom — and stay where you are received.', toolLabel: 'Read the Luke 10 pattern',
+      { id: 'p13', title: 'Search for a house of peace', teaser: 'Go two by two. Bless, eat, serve, tell of the kingdom — and stay where you are received.', toolLabel: 'Read the Luke 10 pattern', toolId: 'luke10',
         verse: 'And if the son of peace be there, your peace shall rest upon it: if not, it shall turn to you again.', verseRef: 'Luke 10:6',
         why: 'Jesus sent workers to find receptive households rather than to persuade closed ones. Your job is to search widely and then to stay where you are welcomed.',
         actions: ['Go with one other person, not alone.', 'Bless the household, receive their hospitality, and serve a need.', 'Tell them plainly about Jesus and see how they respond.', 'If they receive you, stay. If not, bless them and go on to the next.'],
@@ -67,7 +68,7 @@ export const PARTS: Part[] = [
     blurb: 'Sow widely: your story in fifteen seconds, God’s story in three circles, and a study anyone can join.',
     intro: 'A seeded field takes broad sowing. Learn two short tools well enough to share them anywhere, and expect four different responses to the same seed.',
     steps: [
-      { id: 'p21', title: 'Learn your fifteen-second testimony', teaser: 'Before, how, since — five seconds each, ending in a question.', toolLabel: 'Build your story',
+      { id: 'p21', title: 'Learn your fifteen-second testimony', teaser: 'Before, how, since — five seconds each, ending in a question.', toolLabel: 'Build your story', toolId: 'story',
         verse: 'Sanctify the Lord God in your hearts: and be ready always to give an answer to every man that asketh you a reason of the hope that is in you.', verseRef: '1 Peter 3:15',
         why: 'A short, honest story opens doors that an argument never will. Short enough to say at a bus stop, plain enough that a new believer can copy it next week.',
         actions: ['Write one line about your life before Christ.', 'Write one line about how you came to him.', 'Write one line about what has been different since.', 'Say it out loud five times, then use it once this week.'],
@@ -102,7 +103,7 @@ export const PARTS: Part[] = [
     blurb: 'Grow what sprouts: the 411, the three-thirds meeting, and obedience to the commands of Christ.',
     intro: 'A sprouted field needs tending, not admiring. Every believer gets trained to make disciples from the first week — not after years of listening.',
     steps: [
-      { id: 'p31', title: 'Run the 411 with every new believer', teaser: 'Four questions on one sheet of paper in under an hour: why, who, what, when.', toolLabel: 'Open the 411 sheet',
+      { id: 'p31', title: 'Run the 411 with every new believer', teaser: 'Four questions on one sheet of paper in under an hour: why, who, what, when.', toolLabel: 'Open the 411 sheet', toolId: 'fourone',
         verse: 'Now then we are ambassadors for Christ, as though God did beseech you by us.', verseRef: '2 Corinthians 5:20',
         why: 'A new believer who is sent in the first week becomes a disciple-maker. One who is only taught becomes an audience. The 411 does it in one sitting with one page.',
         actions: ['Why: read 2 Corinthians 5:17-21 and settle their new identity as an ambassador.', 'Who: map their oikos with them, marking green, yellow and red lights.', 'What: teach them your story in fifteen seconds and the three circles.', 'When: set a date and a name — who will they tell, and by when?'],
@@ -116,7 +117,7 @@ export const PARTS: Part[] = [
         heart: 'Simple and steady beats impressive and occasional. You are building something meant to outlive your strength.',
         prayer: 'Lord, make our meetings plain and full of you, and keep me from performing.',
         hard: 'If the meeting becomes all teaching, you have drifted. Give the last third back to obedience.' },
-      { id: 'p33', title: 'Walk them through the commands of Christ', teaser: 'One command at a time, obeyed before the next is added.', toolLabel: 'See the commands',
+      { id: 'p33', title: 'Walk them through the commands of Christ', teaser: 'One command at a time, obeyed before the next is added.', toolLabel: 'See the commands', toolId: 'commands',
         verse: 'Teaching them to observe all things whatsoever I have commanded you.', verseRef: 'Matthew 28:20',
         why: 'The Great Commission ends with obedience, not information. Take the commands of Christ in order and do not move on until the group has actually obeyed the last one.',
         actions: ['Take one command per gathering: repent and believe, be baptized, pray, love, give, and so on.', 'Ask each person what obedience will look like for them this week.', 'Follow up on it the next week, gently and by name.', 'Celebrate obedience out loud when you see it.'],
@@ -205,7 +206,7 @@ export const PARTS: Part[] = [
 ];
 
 export const ALL_STEPS = PARTS.flatMap((p) =>
-  p.steps.map((s) => ({ ...s, part: p.n, partTitle: p.title, partField: p.field, tool: s.toolLabel ? p.tool : null }))
+  p.steps.map((s) => ({ ...s, part: p.n, partTitle: p.title, partField: p.field, tool: s.toolLabel ? (s.toolId ?? p.tool) : null }))
 );
 
 export type ToolItem = { title: string; body: string };
