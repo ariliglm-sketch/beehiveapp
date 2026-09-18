@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PlainHeader } from '../components/Header';
 import { Icon } from '../components/Icon';
 import { Field, Btn } from '../components/ui';
+import { showAlert } from '../lib/confirm';
 import { colors, fonts, space } from '../theme/tokens';
 import { namingFor, useAppDispatch, useAppState } from '../state/store';
 
@@ -13,7 +14,7 @@ export function PrayerScreen() {
   const naming = namingFor(state);
 
   const confirmDelete = (id: string, name: string) => {
-    Alert.alert('Take ' + name + ' off the list?', 'They stay on your oikos map if they were already there.', [
+    showAlert('Take ' + name + ' off the list?', 'They stay on your oikos map if they were already there.', [
       { text: 'Keep', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'deleteName', id }) },
     ]);

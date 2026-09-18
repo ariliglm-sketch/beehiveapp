@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ShareStackParamList } from '../navigation/types';
 import { PlainHeader } from '../components/Header';
 import { Field, Btn } from '../components/ui';
+import { showAlert } from '../lib/confirm';
 import { colors, fonts, space } from '../theme/tokens';
 import { daysSince, parseReportText, sortedFlock, useAppDispatch, useAppState } from '../state/store';
 
@@ -30,7 +31,7 @@ export function FlockScreen({ navigation }: Props) {
   };
 
   const confirmDelete = (id: string, codeName: string) => {
-    Alert.alert('Stop watching for ' + codeName + '?', 'Any report already filed under this name is removed too.', [
+    showAlert('Stop watching for ' + codeName + '?', 'Any report already filed under this name is removed too.', [
       { text: 'Keep', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'deleteFlockEntry', id }) },
     ]);

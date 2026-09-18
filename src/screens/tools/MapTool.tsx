@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Field, Btn, Tag } from '../../components/ui';
+import { showAlert } from '../../lib/confirm';
 import { colors, fonts, space } from '../../theme/tokens';
 import {
   deepestGeneration,
@@ -50,7 +51,7 @@ export function MapTool() {
   };
 
   const confirmDelete = (id: string, name: string) => {
-    Alert.alert('Remove ' + name + '?', 'Anything started from it stays on the map, attached further up.', [
+    showAlert('Remove ' + name + '?', 'Anything started from it stays on the map, attached further up.', [
       { text: 'Keep', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'deleteGroup', id }) },
     ]);

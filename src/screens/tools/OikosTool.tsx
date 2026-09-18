@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { Field, Btn } from '../../components/ui';
+import { showAlert } from '../../lib/confirm';
 import { colors, fonts, space } from '../../theme/tokens';
 import { isOnPrayerList, markLook, namingFor, oikosLook, useAppDispatch, useAppState, type OikosMark } from '../../state/store';
 
@@ -24,7 +25,7 @@ export function OikosTool() {
   const red = state.oikos.filter((p) => p.light === 'red').length;
 
   const confirmDelete = (id: string, name: string) => {
-    Alert.alert('Remove ' + name + '?', 'This takes them off your map. Anything you wrote in your journal stays.', [
+    showAlert('Remove ' + name + '?', 'This takes them off your map. Anything you wrote in your journal stays.', [
       { text: 'Keep', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'deleteOikos', id }) },
     ]);
@@ -35,7 +36,7 @@ export function OikosTool() {
       dispatch({ type: 'toggleDiscreet' });
       return;
     }
-    Alert.alert('Use real names?', 'Anyone who picks up this phone will be able to read them. Names already written do not change.', [
+    showAlert('Use real names?', 'Anyone who picks up this phone will be able to read them. Names already written do not change.', [
       { text: 'Keep code names', style: 'cancel' },
       { text: 'Use real names', onPress: () => dispatch({ type: 'toggleDiscreet' }) },
     ]);

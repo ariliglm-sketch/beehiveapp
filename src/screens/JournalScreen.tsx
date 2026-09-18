@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PlainHeader } from '../components/Header';
 import { Field, Btn, Card } from '../components/ui';
+import { showAlert } from '../lib/confirm';
 import { colors, space } from '../theme/tokens';
 import { PARTS } from '../data/content';
 import { activePartNum, nextStep, personName, useAppDispatch, useAppState } from '../state/store';
@@ -33,7 +34,7 @@ export function JournalScreen() {
   };
 
   const confirmDelete = (id: string) => {
-    Alert.alert('Delete this entry?', 'It cannot be brought back.', [
+    showAlert('Delete this entry?', 'It cannot be brought back.', [
       { text: 'Keep', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => dispatch({ type: 'deleteEntry', id }) },
     ]);

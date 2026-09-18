@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ShareStackParamList } from '../navigation/types';
 import { PlainHeader } from '../components/Header';
 import { Btn, Field } from '../components/ui';
 import { Icon } from '../components/Icon';
+import { showAlert } from '../lib/confirm';
 import { colors, fonts, space } from '../theme/tokens';
 import { PARTS } from '../data/content';
 import { ALL_TOOLS } from '../data/toolbox';
@@ -67,7 +68,7 @@ export function ShareScreen({ navigation }: Props) {
     const extra =
       (journalIds.length > 0 ? '\n' + journalIds.length + ' journal entry(ies), word for word' : '') +
       (note.trim() ? '\nYour note' : '');
-    Alert.alert(
+    showAlert(
       'Send this to your coach?',
       'This is what is leaving your phone:\n\n' + lines + extra + '\n\nOnce sent, it cannot be recalled.',
       [

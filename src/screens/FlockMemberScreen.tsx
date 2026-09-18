@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ShareStackParamList } from '../navigation/types';
 import { BareHeader } from '../components/Header';
 import { Btn, Field } from '../components/ui';
+import { showAlert } from '../lib/confirm';
 import { colors, fonts, space } from '../theme/tokens';
 import { ALL_STEPS } from '../data/content';
 import { DAILY_VERSES, textForVerseId } from '../data/verses';
@@ -60,10 +61,10 @@ export function FlockMemberScreen({ route, navigation }: Props) {
 
   const confirmAndSend = () => {
     if (!hasContent) {
-      Alert.alert('Nothing to send yet', 'Pick a verse, write a word, give a step, or set a check-in first.');
+      showAlert('Nothing to send yet', 'Pick a verse, write a word, give a step, or set a check-in first.');
       return;
     }
-    Alert.alert(
+    showAlert(
       'Send this to ' + entry.codeName + '?',
       'This will leave your phone as a plain message, the same way his reports reach you.',
       [
