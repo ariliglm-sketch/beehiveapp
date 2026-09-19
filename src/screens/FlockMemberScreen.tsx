@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ShareStackParamList } from '../navigation/types';
 import { BareHeader } from '../components/Header';
 import { Btn, Field } from '../components/ui';
 import { showAlert } from '../lib/confirm';
+import { shareOrCopy } from '../lib/shareText';
 import { colors, fonts, space } from '../theme/tokens';
 import { ALL_STEPS } from '../data/content';
 import { DAILY_VERSES, textForVerseId } from '../data/verses';
@@ -75,19 +76,13 @@ export function FlockMemberScreen({ route, navigation }: Props) {
   };
 
   const doSend = async () => {
-    try {
-      const result = await Share.share({ message: noteText });
-      if (Platform.OS === 'ios' && (result as { action?: string }).action === Share.dismissedAction) {
-        return;
-      }
-      dispatch({ type: 'recordNoteSent', id: entry.id });
-      setVerseId(null);
-      setWords('');
-      setStepId(null);
-      setCheckIn('');
-    } catch {
-      // The share sheet itself was cancelled or failed to open — nothing was sent.
-    }
+    const sent = await shareOrCopy(noteText);
+    if (!sent) return;
+    dispatch({ type: 'recordNoteSent', id: entry.id });
+    setVerseId(null);
+    setWords('');
+    setStepId(null);
+    setCheckIn('');
   };
 
   return (

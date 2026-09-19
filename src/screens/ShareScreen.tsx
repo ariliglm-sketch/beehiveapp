@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ShareStackParamList } from '../navigation/types';
 import { PlainHeader } from '../components/Header';
 import { Btn, Field } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { showAlert } from '../lib/confirm';
+import { shareOrCopy } from '../lib/shareText';
 import { colors, fonts, space } from '../theme/tokens';
 import { PARTS } from '../data/content';
 import { ALL_TOOLS } from '../data/toolbox';
@@ -91,17 +92,11 @@ export function ShareScreen({ navigation }: Props) {
 
   const doSend = async () => {
     const summary = reportSummary(sections, journalIds.length);
-    try {
-      const result = await Share.share({ message: reportText });
-      if (Platform.OS === 'ios' && (result as { action?: string }).action === Share.dismissedAction) {
-        return;
-      }
-      dispatch({ type: 'recordSentReport', summary, hadJournal: journalIds.length > 0 });
-      setNote('');
-      setJournalTicks({});
-    } catch {
-      // The share sheet itself was cancelled or failed to open — nothing was sent, so nothing is logged.
-    }
+    const sent = await shareOrCopy(reportText);
+    if (!sent) return;
+    dispatch({ type: 'recordSentReport', summary, hadJournal: journalIds.length > 0 });
+    setNote('');
+    setJournalTicks({});
   };
 
   return (
