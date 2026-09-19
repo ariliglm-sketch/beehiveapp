@@ -37,6 +37,7 @@ export const DAILY_VERSES: DailyVerse[] = [
   { id: 'p44', ref: 'James 1:27' },
   { id: 'p51', ref: 'Mark 3:14' },
   { id: 'p52', ref: '2 Timothy 2:2' },
+  { id: 'p53', ref: '2 Timothy 2:2' },
   { id: 'p54', ref: '1 Thessalonians 1:8' },
 ];
 
@@ -121,6 +122,7 @@ const FALLBACK_TEXT: Record<string, string> = {
   p44: 'Pure religion and undefiled before God and the Father is this, To visit the fatherless and widows in their affliction.',
   p51: 'And he ordained twelve, that they should be with him, and that he might send them forth to preach.',
   p52: 'The things that thou hast heard of me among many witnesses, the same commit thou to faithful men, who shall be able to teach others also.',
+  p53: 'Who shall be able to teach others also.',
   p54: 'So that from you the word of the Lord sounded out, not only in Macedonia and Achaia, but also in every place your faith to God-ward is spread abroad.',
 };
 
@@ -149,7 +151,16 @@ export function verseIndexForDate(d: Date) {
 }
 
 export function verseForDate(d: Date, packId: string) {
-  const verse = DAILY_VERSES[verseIndexForDate(d)];
+  return verseTextForId(DAILY_VERSES[verseIndexForDate(d)].id, packId);
+}
+
+// Looks up one verse by its DAILY_VERSES id, independent of the date rotation —
+// used anywhere else in the app that quotes one of these same references (the
+// step screens, for instance) so the reader's chosen translation applies there too.
+// Every id passed in must have a DAILY_VERSES entry; content.ts and verses.ts are
+// kept in sync on that.
+export function verseTextForId(id: string, packId: string) {
+  const verse = DAILY_VERSES.find((v) => v.id === id)!;
   const pack = packById(packId) || PACKS[0];
   const own = pack.text[verse.id];
   if (own) {
