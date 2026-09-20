@@ -13,6 +13,12 @@
       "package": "com.beehive.companion",
       "predictiveBackGestureEnabled": false
     },
-    "web": {}
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "606b539a-a8ad-4efa-a182-a58877376e1a"
+      }
+    },
+    "owner": "aril.iglm"
   }
 }
