@@ -84,6 +84,9 @@ type State = {
   flock: FlockEntry[];
   coachNote: CoachNote | null;
   startedAt: string;
+  fieldPlace: string;
+  sendingChurch: string;
+  sentDate: string;
 };
 
 const STORAGE_KEY = 'beehive.state.v1';
@@ -111,6 +114,9 @@ const initialState: State = {
   flock: [],
   coachNote: null,
   startedAt: '',
+  fieldPlace: '',
+  sendingChurch: '',
+  sentDate: '',
 };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -152,7 +158,19 @@ function normalize(raw: Partial<State>): Partial<State> {
   if (!Array.isArray(raw.flock)) out.flock = [];
   if (typeof raw.coachNote === 'undefined') out.coachNote = null;
   if (typeof raw.startedAt !== 'string' || !raw.startedAt) out.startedAt = new Date().toISOString();
+  if (typeof raw.fieldPlace !== 'string') out.fieldPlace = '';
+  if (typeof raw.sendingChurch !== 'string') out.sendingChurch = '';
+  if (typeof raw.sentDate !== 'string') out.sentDate = '';
   return out;
+}
+
+export function composePlaceLine(fieldPlace: string, sendingChurch: string, sentDate: string): string {
+  const place = fieldPlace.trim();
+  if (!place) return '';
+  const church = sendingChurch.trim();
+  if (!church) return place;
+  const date = sentDate.trim();
+  return place + ' · sent by ' + church + (date ? ', ' + date : '');
 }
 
 type Action =
@@ -184,6 +202,7 @@ type Action =
   | { type: 'markPrayedToday' }
   | { type: 'markToolOpened'; toolId: string }
   | { type: 'setMyCodeName'; text: string }
+  | { type: 'setFieldInfo'; fieldPlace: string; sendingChurch: string; sentDate: string }
   | { type: 'recordSentReport'; summary: string; hadJournal: boolean }
   | { type: 'addFlockWatch'; codeName: string }
   | { type: 'deleteFlockEntry'; id: string }
@@ -321,6 +340,8 @@ function reducer(state: State, action: Action): State {
       return state.toolsOpened[action.toolId] ? state : { ...state, toolsOpened: { ...state.toolsOpened, [action.toolId]: true } };
     case 'setMyCodeName':
       return { ...state, myCodeName: action.text };
+    case 'setFieldInfo':
+      return { ...state, fieldPlace: action.fieldPlace, sendingChurch: action.sendingChurch, sentDate: action.sentDate };
     case 'recordSentReport':
       return {
         ...state,
@@ -354,7 +375,16 @@ function reducer(state: State, action: Action): State {
     case 'dismissCoachNote':
       return { ...state, coachNote: null };
     case 'resetAll':
-      return { ...initialState, hydrated: true, discreet: state.discreet, packId: state.packId, myCodeName: state.myCodeName };
+      return {
+        ...initialState,
+        hydrated: true,
+        discreet: state.discreet,
+        packId: state.packId,
+        myCodeName: state.myCodeName,
+        fieldPlace: state.fieldPlace,
+        sendingChurch: state.sendingChurch,
+        sentDate: state.sentDate,
+      };
     default:
       return state;
   }
