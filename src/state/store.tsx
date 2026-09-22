@@ -83,6 +83,7 @@ type State = {
   sentReports: SentReport[];
   flock: FlockEntry[];
   coachNote: CoachNote | null;
+  startedAt: string;
 };
 
 const STORAGE_KEY = 'beehive.state.v1';
@@ -109,13 +110,24 @@ const initialState: State = {
   sentReports: [],
   flock: [],
   coachNote: null,
+  startedAt: '',
 };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function today() {
   const d = new Date();
   return d.getDate() + ' ' + MONTHS[d.getMonth()];
+}
+
+export function weekdayDateLine(d: Date): string {
+  return WEEKDAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+}
+
+export function dayCount(state: Pick<State, 'startedAt'>): number {
+  if (!state.startedAt) return 1;
+  return daysSince(state.startedAt) + 1;
 }
 
 function reportDate(d: Date) {
@@ -139,6 +151,7 @@ function normalize(raw: Partial<State>): Partial<State> {
   if (!Array.isArray(raw.sentReports)) out.sentReports = [];
   if (!Array.isArray(raw.flock)) out.flock = [];
   if (typeof raw.coachNote === 'undefined') out.coachNote = null;
+  if (typeof raw.startedAt !== 'string' || !raw.startedAt) out.startedAt = new Date().toISOString();
   return out;
 }
 

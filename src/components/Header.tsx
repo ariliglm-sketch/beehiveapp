@@ -3,9 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, space } from '../theme/tokens';
 import { Icon } from './Icon';
+import { dayCount, useAppState, weekdayDateLine } from '../state/store';
 
-const DATELINE = 'Saturday, 12 September';
-const DAYLINE = 'Day 48';
 const PLACE_LINE = 'Nyakach, Kisumu West · sent by Grace Chapel, 28 August';
 
 function BackRow({ label, onBack }: { label: string; onBack: () => void }) {
@@ -19,12 +18,13 @@ function BackRow({ label, onBack }: { label: string; onBack: () => void }) {
 
 export function MastheadHeader() {
   const insets = useSafeAreaInsets();
+  const state = useAppState();
   return (
     <View style={[s.wrap, { paddingTop: insets.top + 12 }]}>
       <View style={s.rule3} />
       <View style={s.datelineRow}>
-        <Text style={s.datelineText}>{DATELINE}</Text>
-        <Text style={[s.datelineText, { color: colors.accent700 }]}>{DAYLINE}</Text>
+        <Text style={s.datelineText}>{weekdayDateLine(new Date())}</Text>
+        <Text style={[s.datelineText, { color: colors.accent700 }]}>{'Day ' + dayCount(state)}</Text>
       </View>
       <View style={s.rule1} />
       <Text style={s.brand}>Bee Hive</Text>
