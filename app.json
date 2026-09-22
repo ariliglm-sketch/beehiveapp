@@ -13,11 +13,17 @@
       "package": "com.beehive.companion",
       "predictiveBackGestureEnabled": false
     },
-    "web": {},
+    "web": {
+      "themeColor": "#201e1d",
+      "description": "A church planting companion for walking the five parts, mapping your oikos, and reporting to your coach."
+    },
     "extra": {
       "eas": {
         "projectId": "606b539a-a8ad-4efa-a182-a58877376e1a"
       }
+    },
+    "experiments": {
+      "baseUrl": "/beehiveapp"
     },
     "owner": "aril.iglm"
   }
