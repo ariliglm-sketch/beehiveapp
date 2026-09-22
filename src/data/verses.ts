@@ -127,18 +127,6 @@ export const PACKS: VersePack[] = [
       p54: 'Sapagkat mula sa inyo ang salita ng Panginoon ay lumaganap, at hindi lamang sa Macedonia at Acaya. Kundi, sa lahat ng dako kung saan ang inyong pananampalataya sa Diyos ay naibalita. Bilang resulta, hindi na namin kailangang magsalita ng ano pa man.',
     },
   },
-  {
-    id: 'tl-asnd',
-    name: 'Ang Salita ng Diyos',
-    shortName: 'ASND',
-    language: 'Tagalog',
-    bundled: false,
-    license: 'CC BY-SA 4.0',
-    attribution:
-      'Biblica® Open Ang Salita ng Diyos™. Copyright © 2009, 2011, 2014 by Biblica, Inc. The original work by Biblica, Inc. is available for free at www.biblica.com and open.bible. Licensed under Creative Commons Attribution-ShareAlike 4.0 International.',
-    sourceUrl: 'https://open.bible',
-    text: {},
-  },
 ];
 
 export const DEFAULT_PACK_ID = 'tl-ulb';
