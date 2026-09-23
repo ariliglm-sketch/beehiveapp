@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ALL_STEPS, CHURCH_MARKS, ENCOURAGEMENTS, PARTS, type Part } from '../data/content';
 import { ALL_TOOLS } from '../data/toolbox';
@@ -396,6 +397,7 @@ const DispatchCtx = createContext<React.Dispatch<Action> | null>(null);
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stateRef = useRef(state);
 
   useEffect(() => {
     let cancelled = false;
@@ -419,9 +421,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    stateRef.current = state;
     if (!state.hydrated) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
       const { hydrated, celebrate, ...persisted } = state;
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(persisted)).catch(() => {});
     }, 400);
@@ -429,6 +433,23 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [state]);
+
+  // A change sits in the 400ms debounce above until it fires. On a phone, backgrounding
+  // the app (switching away, locking the screen) can happen well inside that window, and
+  // there is no "closing" event to catch it after the fact — so flush immediately the
+  // moment the app stops being active, instead of only ever saving on a timer.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') return;
+      if (!saveTimer.current) return;
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      if (!stateRef.current.hydrated) return;
+      const { hydrated, celebrate, ...persisted } = stateRef.current;
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(persisted)).catch(() => {});
+    });
+    return () => sub.remove();
+  }, []);
 
   return (
     <StateCtx.Provider value={state}>
