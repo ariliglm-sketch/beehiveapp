@@ -2,6 +2,7 @@
   "expo": {
     "name": "Beehive",
     "slug": "beehive",
+    "scheme": "beehive",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -30,6 +31,14 @@
     "experiments": {
       "baseUrl": "/beehiveapp"
     },
-    "owner": "aril.iglm"
+    "owner": "aril.iglm",
+    "plugins": [
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": ["text/*"]
+        }
+      ]
+    ]
   }
 }
