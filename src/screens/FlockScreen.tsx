@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ShareStackParamList } from '../navigation/types';
@@ -18,6 +18,12 @@ export function FlockScreen({ navigation }: Props) {
   const [error, setError] = useState('');
 
   const flock = sortedFlock(state);
+
+  useEffect(() => {
+    if (!state.incomingShare || state.incomingShare.kind !== 'report') return;
+    setPasteText(state.incomingShare.text);
+    dispatch({ type: 'clearIncomingShare' });
+  }, [state.incomingShare, dispatch]);
 
   const readIt = () => {
     const result = parseReportText(pasteText);

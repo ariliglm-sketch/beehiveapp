@@ -88,6 +88,7 @@ type State = {
   fieldPlace: string;
   sendingChurch: string;
   sentDate: string;
+  incomingShare: { kind: 'report' | 'note' | 'unknown'; text: string } | null;
 };
 
 const STORAGE_KEY = 'beehive.state.v1';
@@ -118,6 +119,7 @@ const initialState: State = {
   fieldPlace: '',
   sendingChurch: '',
   sentDate: '',
+  incomingShare: null,
 };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -204,6 +206,8 @@ type Action =
   | { type: 'markToolOpened'; toolId: string }
   | { type: 'setMyCodeName'; text: string }
   | { type: 'setFieldInfo'; fieldPlace: string; sendingChurch: string; sentDate: string }
+  | { type: 'receiveIncomingShare'; kind: 'report' | 'note' | 'unknown'; text: string }
+  | { type: 'clearIncomingShare' }
   | { type: 'recordSentReport'; summary: string; hadJournal: boolean }
   | { type: 'addFlockWatch'; codeName: string }
   | { type: 'deleteFlockEntry'; id: string }
@@ -343,6 +347,10 @@ function reducer(state: State, action: Action): State {
       return { ...state, myCodeName: action.text };
     case 'setFieldInfo':
       return { ...state, fieldPlace: action.fieldPlace, sendingChurch: action.sendingChurch, sentDate: action.sentDate };
+    case 'receiveIncomingShare':
+      return { ...state, incomingShare: { kind: action.kind, text: action.text } };
+    case 'clearIncomingShare':
+      return { ...state, incomingShare: null };
     case 'recordSentReport':
       return {
         ...state,
@@ -426,7 +434,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveTimer.current = null;
-      const { hydrated, celebrate, ...persisted } = state;
+      const { hydrated, celebrate, incomingShare, ...persisted } = state;
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(persisted)).catch(() => {});
     }, 400);
     return () => {
@@ -445,7 +453,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
       if (!stateRef.current.hydrated) return;
-      const { hydrated, celebrate, ...persisted } = stateRef.current;
+      const { hydrated, celebrate, incomingShare, ...persisted } = stateRef.current;
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(persisted)).catch(() => {});
     });
     return () => sub.remove();

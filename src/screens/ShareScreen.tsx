@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ShareStackParamList } from '../navigation/types';
@@ -43,6 +43,12 @@ export function ShareScreen({ navigation }: Props) {
 
   const journalIds = useMemo(() => Object.keys(journalTicks).filter((id) => journalTicks[id]), [journalTicks]);
   const reportText = useMemo(() => composeReportText(state, sections, journalIds, note), [state, sections, journalIds, note]);
+
+  useEffect(() => {
+    if (!state.incomingShare || state.incomingShare.kind === 'report') return;
+    setPasteNote(state.incomingShare.text);
+    dispatch({ type: 'clearIncomingShare' });
+  }, [state.incomingShare, dispatch]);
 
   const previewFor = (key: keyof ReportSections) => {
     if (key === 'field') {
