@@ -644,9 +644,9 @@ export function mapAdvice(state: State) {
 }
 
 export const oikosLook: Record<OikosLight, { light: string; color: string; icon: string }> = {
-  green: { light: 'Green · go now', color: 'accent700', icon: 'DoorOpen' },
-  yellow: { light: 'Yellow · keep loving', color: 'accent2700', icon: 'HourglassMedium' },
-  red: { light: 'Red · keep praying', color: 'neutral600', icon: 'Door' },
+  green: { light: 'Green · go now', color: 'signalGreen', icon: 'DoorOpen' },
+  yellow: { light: 'Yellow · keep loving', color: 'signalYellow', icon: 'HourglassMedium' },
+  red: { light: 'Red · keep praying', color: 'signalRed', icon: 'Door' },
 };
 
 export const markLook: Record<OikosMark, { label: string; short: string }> = {

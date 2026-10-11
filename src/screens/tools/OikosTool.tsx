@@ -7,9 +7,9 @@ import { colors, fonts, space } from '../../theme/tokens';
 import { isOnPrayerList, markLook, namingFor, oikosLook, useAppDispatch, useAppState, type OikosMark } from '../../state/store';
 
 const COLOR_MAP: Record<string, string> = {
-  accent700: colors.accent700,
-  accent2700: colors.accent2700,
-  neutral600: colors.neutral600,
+  signalGreen: colors.signalGreen,
+  signalYellow: colors.signalYellow,
+  signalRed: colors.signalRed,
 };
 
 const MARKS: OikosMark[] = ['convo', 'study', 'trained'];
